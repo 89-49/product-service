@@ -7,7 +7,6 @@ import org.pgsg.common.exception.CustomException;
 
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -33,7 +32,7 @@ public class TimeDealSchedule {
 		Objects.requireNonNull(startTime,"시작 시간이 누락되었습니다.");
 		Objects.requireNonNull(endTime,"종료 시간이 누락되었습니다.");
 
-		if(startTime.isAfter(LocalDateTime.now()))
+		if(startTime.isBefore(LocalDateTime.now()))
 			throw new CustomException("StartTimeValidateException","startTime");
 		else if (endTime.isBefore(startTime))
 			throw new CustomException("ScheduleValidateException","endTime");

@@ -44,7 +44,7 @@ public class Product extends BaseEntity {
 
 
 	//상품 생성
-	public Product create(String name, Integer price, String description, TimeDealSchedule timeDealSchedule) {
+	public static Product create(String name, Integer price, String description, TimeDealSchedule timeDealSchedule) {
 		validatePrice(price);
 
 		Objects.requireNonNull(name,"상품명이 누락되었습니다.");
@@ -60,7 +60,7 @@ public class Product extends BaseEntity {
 		return product;
 	}
 
-	public void validatePrice(Integer price) {
+	private static void validatePrice(Integer price) {
 		if (price < 0)
 			throw new CustomException("PriceValidateException","price");
 	}
