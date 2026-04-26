@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: product-service
+
+  config:
+    import:
+      - optional:configserver:http://34.50.50.170:13100
+      - classpath*:application-error.yml
+      - classpath:application-error-product.yml
