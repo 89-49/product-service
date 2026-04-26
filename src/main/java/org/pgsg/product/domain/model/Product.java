@@ -10,6 +10,8 @@ import org.pgsg.common.exception.CustomException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -37,6 +39,7 @@ public class Product extends BaseEntity {
 	private String description;
 
 	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
 	private ProductStatus status;
 
 	@Embedded
@@ -54,13 +57,14 @@ public class Product extends BaseEntity {
 		product.name = name;
 		product.price = price;
 		product.description = description;
-		product.timeDealSchedule = timeDealSchedule;
+		product.timeDealSchedule = TimeDealSchedule.of(timeDealSchedule.getStartTime(), timeDealSchedule.getEndTime());
 		product.status=ProductStatus.PENDING_RESERVATION;
 
 		return product;
 	}
 
 	private static void validatePrice(Integer price) {
+		Objects.requireNonNull(price);
 		if (price < 0)
 			throw new CustomException("PriceValidateException","price");
 	}

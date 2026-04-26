@@ -4,6 +4,6 @@ spring:
 
   config:
     import:
-      - optional:configserver:http://34.50.50.170:13100
+      - optional:configserver:${CONFIGSERVER}
       - classpath*:application-error.yml
       - classpath:application-error-product.yml
