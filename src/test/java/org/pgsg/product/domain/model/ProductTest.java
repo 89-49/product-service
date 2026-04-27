@@ -21,14 +21,13 @@ class ProductTest {
 
 	@BeforeEach
 	void setUp() {
-		TimeDealSchedule schedule =TimeDealSchedule.of(LocalDateTime.now().plusHours(2),LocalDateTime.now().plusHours(3));
-		validProduct = Product.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION, schedule);
+		validProduct = Product.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION);
+		validProduct.setTimeDealSchedule(LocalDateTime.now().plusHours(3));
 	}
 
 	@Test
 	void create_성공() {
-		TimeDealSchedule schedule =TimeDealSchedule.of(LocalDateTime.now().plusHours(2),LocalDateTime.now().plusHours(3));
-		Product p = Product.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION, schedule);
+		Product p = Product.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION);
 
 		assertThat(p.getName()).isEqualTo(VALID_PRODUCT_NAME);
 		assertThat(p.getPrice()).isEqualTo(VALID_PRODUCT_PRICE);
@@ -37,26 +36,30 @@ class ProductTest {
 
 	@Test
 	void create_잘못된_가격() {
-		TimeDealSchedule schedule =TimeDealSchedule.of(LocalDateTime.now().plusHours(2),LocalDateTime.now().plusHours(3));
 		assertThatThrownBy(()->Product
-			.create(VALID_PRODUCT_NAME, -1,VALID_PRODUCT_DESCRIPTION, schedule))
+			.create(VALID_PRODUCT_NAME, -1,VALID_PRODUCT_DESCRIPTION))
 			.isInstanceOf(CustomException.class);
 	}
 
 	@Test
 	void create_잘못된_종료시간_설정(){
-		assertThatThrownBy(()->Product
-			.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION,
-				TimeDealSchedule.of(LocalDateTime.now().plusHours(2),LocalDateTime.now().plusHours(1))))
+		Product p=Product
+			.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION);
+		assertThatThrownBy(()->p.setTimeDealSchedule(LocalDateTime.now()))
 			.isInstanceOf(CustomException.class);
 	}
 
+	// @Test	//todo: 해당 부분은 스케줄링 고도화 시 다시 작성
+	// void create_잘못된_시작시간_설정(){
+	// 		assertThatThrownBy(()->Product
+	// 		.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION,
+	// 			TimeDealSchedule.of(LocalDateTime.now().minusHours(1),LocalDateTime.now().plusHours(1))))
+	// 		.isInstanceOf(CustomException.class);
+	// }
+
 	@Test
-	void create_잘못된_시작시간_설정(){
-			assertThatThrownBy(()->Product
-			.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION,
-				TimeDealSchedule.of(LocalDateTime.now().minusHours(1),LocalDateTime.now().plusHours(1))))
-			.isInstanceOf(CustomException.class);
+	void 타임딜_스케줄링_성공(){
+		assertThat(validProduct.getTimeDealSchedule()).isNotNull();
 	}
 
 	@Test
@@ -95,7 +98,8 @@ class ProductTest {
 		assertThat(validProduct.getName()).isEqualTo(VALID_PRODUCT_NAME);
 		assertThat(validProduct.getPrice()).isEqualTo(VALID_PRODUCT_PRICE);
 		assertThat(validProduct.getDescription()).isEqualTo(VALID_PRODUCT_DESCRIPTION);
-		assertThat(validProduct.getTimeDealSchedule()).isEqualTo(newSchedule);
+		assertThat(validProduct.getTimeDealSchedule().getStartTime()).isEqualTo(newSchedule.getStartTime());
+		assertThat(validProduct.getTimeDealSchedule().getEndTime()).isEqualTo(newSchedule.getEndTime());
 	}
 
 	@Test
