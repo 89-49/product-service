@@ -34,7 +34,7 @@ public class TimeDealSchedule {
 
 		if(startTime.isBefore(LocalDateTime.now()))
 			throw new CustomException("StartTimeValidateException","startTime");
-		else if (endTime.isBefore(startTime))
-			throw new CustomException("ScheduleValidateException","endTime");
+		if (endTime.isBefore(startTime))
+			throw new CustomException("EndTimeValidateException","endTime");
 	}
 }
