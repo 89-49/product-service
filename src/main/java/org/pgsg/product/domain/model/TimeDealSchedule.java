@@ -32,8 +32,9 @@ public class TimeDealSchedule {
 		Objects.requireNonNull(startTime,"시작 시간이 누락되었습니다.");
 		Objects.requireNonNull(endTime,"종료 시간이 누락되었습니다.");
 
-		if(startTime.isBefore(LocalDateTime.now()))
-			throw new CustomException("StartTimeValidateException","startTime");
+		// if(startTime.isBefore(LocalDateTime.now()))	//todo: 타임딜 스케줄링 고도화 시 사용
+		// 	throw new CustomException("StartTimeValidateException","startTime");
+
 		if (endTime.isBefore(startTime))
 			throw new CustomException("EndTimeValidateException","endTime");
 	}

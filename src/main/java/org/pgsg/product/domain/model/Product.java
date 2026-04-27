@@ -71,7 +71,7 @@ public class Product extends BaseEntity {
 	}
 
 	//요청 시간 기준으로 타임딜 시간 설정
-	private void setTimeDealSchedule(LocalDateTime end) {
+	public void setTimeDealSchedule(LocalDateTime end) {
 		validateTimeDealSchedule(LocalDateTime.now(),end);
 
 		this.timeDealSchedule=TimeDealSchedule.of(LocalDateTime.now(),end);
@@ -157,7 +157,7 @@ public class Product extends BaseEntity {
 		// 	throw new CustomException("InvalidChangeScheduleException", "startTime");
 		// }
 
-		if(start.isBefore(end.plusMinutes(15)))
+		if(end.isBefore(start.plusMinutes(15)))
 			throw new CustomException("InvalidTimeDealDurationException","end");
 	}
 
