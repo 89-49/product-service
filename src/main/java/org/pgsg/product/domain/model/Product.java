@@ -72,9 +72,10 @@ public class Product extends BaseEntity {
 
 	//요청 시간 기준으로 타임딜 시간 설정
 	public void setTimeDealSchedule(LocalDateTime end) {
-		validateTimeDealSchedule(LocalDateTime.now(),end);
+		LocalDateTime now = LocalDateTime.now();
+		validateTimeDealSchedule(now,end);
 
-		this.timeDealSchedule=TimeDealSchedule.of(LocalDateTime.now(),end);
+		this.timeDealSchedule=TimeDealSchedule.of(now,end);
 		this.status=ProductStatus.PENDING_RESERVATION;
 	}
 
