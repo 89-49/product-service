@@ -39,6 +39,7 @@ public class ProductCommandService {
 		Product product=productRepository.findById(id)
 			.orElseThrow(()->new CustomException(ProductNotFoundException));
 
-		product.deleteProduct(UserContext.getUserId());
+		UUID userId = Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");
+		product.deleteProduct(userId);
 	}
 }
