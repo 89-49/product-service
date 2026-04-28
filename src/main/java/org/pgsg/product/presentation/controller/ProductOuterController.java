@@ -49,7 +49,7 @@ public class ProductOuterController {
 
 	//스케줄 설정 - //todo: mvp 임시 요청
 	@PatchMapping("/{productId}/schedule")
-	public CommonResponse<UpdateProductResponse> updateTimeDealSchedule(@PathVariable UUID productId, @RequestBody UpdateTimeDealRequest request) {
+	public CommonResponse<UpdateProductResponse> updateTimeDealSchedule(@PathVariable UUID productId,@Valid @RequestBody UpdateTimeDealRequest request) {
 		return null;	//todo: 응용 계층 구현 후 수정
 	}
 
