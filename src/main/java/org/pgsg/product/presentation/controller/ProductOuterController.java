@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.pgsg.common.response.CommonResponse;
-import org.pgsg.product.application.service.ProductService;
+import org.pgsg.product.application.dto.command.CreateProductCommand;
+import org.pgsg.product.application.service.ProductCommandService;
 import org.pgsg.product.presentation.dto.request.CreateProductRequest;
 import org.pgsg.product.presentation.dto.request.UpdateProductRequest;
 import org.pgsg.product.presentation.dto.request.UpdateTimeDealRequest;
@@ -12,6 +13,7 @@ import org.pgsg.product.presentation.dto.response.CreateProductResponse;
 import org.pgsg.product.presentation.dto.response.FindProductResponse;
 import org.pgsg.product.presentation.dto.response.ProductListItem;
 import org.pgsg.product.presentation.dto.response.UpdateProductResponse;
+import org.pgsg.product.presentation.mapper.ProductMapper;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -33,18 +35,23 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
 public class ProductOuterController {
-	private final ProductService productService;
+	private final ProductCommandService productCommandService;
+	private final ProductMapper mapper;
 
 	//상품 등록
 	@PostMapping
 	public CommonResponse<CreateProductResponse> addProduct(@Valid @RequestBody CreateProductRequest request) {
-		return null;	//todo: 응용 계층 구현 후 수정
+		CreateProductCommand command=mapper.toCommand(request);
+		CreateProductResponse response=mapper.toResponse(
+			productCommandService.createProduct(command));
+		return CommonResponse.success(response);
 	}
 
 	//상품 삭제
 	@DeleteMapping("/{productId}")
-	public void deleteProduct(@PathVariable UUID productId) {
-		//todo: 응용 계층 구현 후 수정
+	public CommonResponse<Void> deleteProduct(@PathVariable UUID productId) {
+		productCommandService.deleteProduct(productId);
+		return  CommonResponse.success(null);
 	}
 
 	//스케줄 설정 - //todo: mvp 임시 요청

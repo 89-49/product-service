@@ -1,5 +1,8 @@
 package org.pgsg.product.infrastructure.repository;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.repository.ProductRepository;
 import org.springframework.stereotype.Repository;
@@ -14,5 +17,10 @@ public class ProductJpaRepositoryImpl implements ProductRepository {
 	@Override
 	public Product save(Product product) {
 		return productJpaRepository.save(product);
+	}
+
+	@Override
+	public Optional<Product> findById(UUID id) {
+		return productJpaRepository.findById(id);
 	}
 }

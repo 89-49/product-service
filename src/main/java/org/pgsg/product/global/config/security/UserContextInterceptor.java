@@ -1,4 +1,4 @@
-package org.pgsg.product.config.security;
+package org.pgsg.product.global.config.security;
 
 import java.util.UUID;
 

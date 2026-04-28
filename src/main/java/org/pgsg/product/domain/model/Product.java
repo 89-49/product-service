@@ -1,5 +1,7 @@
 package org.pgsg.product.domain.model;
 
+import static org.pgsg.product.global.exception.ProductException.*;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -67,7 +69,7 @@ public class Product extends BaseEntity {
 	private static void validatePrice(Integer price) {
 		Objects.requireNonNull(price);
 		if (price < 0)
-			throw new CustomException("PriceValidateException","price");
+			throw new CustomException(PriceValidateException,"price");
 	}
 
 	//요청 시간 기준으로 타임딜 시간 설정
@@ -83,35 +85,35 @@ public class Product extends BaseEntity {
 	//예약 대기 중 -> 예약 진행 중
 	public void startReserve() {
 		if(!status.equals(ProductStatus.PENDING_RESERVATION))
-			throw new CustomException("InvalidStatusException","status");
+			throw new CustomException(InvalidStatusException,"status");
 		status = ProductStatus.RESERVING;
 	}
 
 	//예약 진행 중 -> 거래 진행 중
 	public void startTrade() {
 		if(!status.equals(ProductStatus.RESERVING))
-			throw new CustomException("InvalidStatusException","status");
+			throw new CustomException(InvalidStatusException,"status");
 		status = ProductStatus.IN_TRADE;
 	}
 
 	//거래 진행 중 -> 거래 완료
 	public void complete() {
 		if(!status.equals(ProductStatus.IN_TRADE))
-			throw new CustomException("InvalidStatusException","status");
+			throw new CustomException(InvalidStatusException,"status");
 		status = ProductStatus.COMPLETED;
 	}
 
 	//거래 또는 예약 취소로 인해 예약 진행 중으로 변경
 	public void revertToReserving() {
 		if(!status.equals(ProductStatus.RESERVING)&&!status.equals(ProductStatus.IN_TRADE))
-			throw new CustomException("InvalidStatusException","status");
+			throw new CustomException(InvalidStatusException,"status");
 		status = ProductStatus.RESERVING;
 	}
 
 	//판매 대기 중 -> 예약 대기 중
 	public void reserve() {
 		if(!status.equals(ProductStatus.PENDING_SALE))
-			throw new CustomException("InvalidStatusException","status");
+			throw new CustomException(InvalidStatusException,"status");
 		status = ProductStatus.PENDING_RESERVATION;
 	}
 
@@ -123,7 +125,7 @@ public class Product extends BaseEntity {
 	//상품 정보 변경
 	public void update(String newName, Integer newPrice, String newDescription, TimeDealSchedule newTimeDealSchedule) {
 		if(!isUpdatableStatus())
-			throw new CustomException("InvalidStatusException","status");
+			throw new CustomException(InvalidStatusException,"status");
 
 		if(!(newName ==null || newName.isBlank()))
 			name = newName.trim();
@@ -143,7 +145,7 @@ public class Product extends BaseEntity {
 	//타임딜 스케줄 변경
 	public void changeTimeDealSchedule(LocalDateTime newStart, LocalDateTime newEnd) {
 		if(!isUpdatableStatus())
-			throw new CustomException("InvalidStatusException","status");
+			throw new CustomException(InvalidStatusException,"status");
 
 		validateTimeDealSchedule(newStart, newEnd);
 
@@ -159,7 +161,7 @@ public class Product extends BaseEntity {
 		// }
 
 		if(end.isBefore(start.plusMinutes(15)))
-			throw new CustomException("InvalidTimeDealDurationException","end");
+			throw new CustomException(InvalidTimeDealDurationException,"end");
 	}
 
 	private boolean isUpdatableStatus() {

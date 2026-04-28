@@ -1,9 +1,9 @@
-package org.pgsg.product.config.jpa;
+package org.pgsg.product.global.config.jpa;
 
 import java.util.Optional;
 import java.util.UUID;
 
-import org.pgsg.product.config.security.UserContext;
+import org.pgsg.product.global.config.security.UserContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
