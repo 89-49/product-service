@@ -32,8 +32,14 @@ repositories {
 dependencies {
     implementation 'org.pgsg:common:0.0.1-SNAPSHOT'
     implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.mapstruct:mapstruct:1.6.0'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.0'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testCompileOnly 'org.projectlombok:lombok'
