@@ -20,12 +20,13 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -36,45 +37,45 @@ public class ProductOuterController {
 
 	//상품 등록
 	@PostMapping
-	public CommonResponse<CreateProductResponse> addProduct(@RequestBody CreateProductRequest request) {
+	public CommonResponse<CreateProductResponse> addProduct(@Valid @RequestBody CreateProductRequest request) {
 		return null;	//todo: 응용 계층 구현 후 수정
 	}
 
 	//상품 삭제
-	@DeleteMapping("/productId")
-	public void deleteProduct(@RequestParam UUID productId) {
+	@DeleteMapping("/{productId}")
+	public void deleteProduct(@PathVariable UUID productId) {
 		//todo: 응용 계층 구현 후 수정
 	}
 
 	//스케줄 설정 - //todo: mvp 임시 요청
-	@PatchMapping("/productId")
-	public CommonResponse<UpdateProductResponse> updateTimeDealSchedule(@RequestParam UUID productId, @RequestBody UpdateTimeDealRequest request) {
+	@PatchMapping("/{productId}/schedule")
+	public CommonResponse<UpdateProductResponse> updateTimeDealSchedule(@PathVariable UUID productId, @RequestBody UpdateTimeDealRequest request) {
 		return null;	//todo: 응용 계층 구현 후 수정
 	}
 
 
 	//상품 정보 수정
-	@PatchMapping("/productId")
-	public CommonResponse<UpdateProductResponse> updateProduct(@RequestBody UpdateProductRequest request) {
+	@PatchMapping("/{productId}")
+	public CommonResponse<UpdateProductResponse> updateProduct(@PathVariable UUID productId, @Valid @RequestBody UpdateProductRequest request) {
 		return null;	//todo: 응용 계층 구현 후 수정
 	}
 
 	//상품 판매 취소
-	@PatchMapping("/productId")
-	public void cancelSaleProduct(@RequestParam UUID productId) {
+	@PatchMapping("/{productId}/cancel")
+	public void cancelSaleProduct(@PathVariable UUID productId) {
 		//todo: 응용 계층 구현 후 수정
 	}
 
 	//상품 상세 조회
-	@GetMapping("/productId")
-	public CommonResponse<FindProductResponse> findProductById(@RequestParam UUID productId) {
+	@GetMapping("/{productId}")
+	public CommonResponse<FindProductResponse> findProductById(@PathVariable UUID productId) {
 		return null;	//todo: 응용 계층 구현 후 수정
 	}
 
 	//상품 목록 조회
 	@GetMapping
-	public CommonResponse<Slice<ProductListItem>> getAllProducts(@RequestParam UUID productId
-		, @PageableDefault(size = 10, direction = Sort.Direction.DESC) Pageable pageable) {
+	public CommonResponse<Slice<ProductListItem>> getAllProducts(
+		@PageableDefault(size = 10, direction = Sort.Direction.DESC) Pageable pageable) {
 		return null;	//todo: 응용 계층 구현 후 수정
 	}
 

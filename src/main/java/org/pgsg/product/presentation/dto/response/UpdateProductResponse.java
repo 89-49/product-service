@@ -7,8 +7,8 @@ import jakarta.validation.constraints.NotNull;
 
 public record UpdateProductResponse(
 	@NotBlank String name,
-	@NotNull String price,
-	String Description,
+	@NotNull Integer price,
+	String description,
 	LocalDateTime startTime,	//todo: 타임딜 정보는 방식 수정 후 검증 설정 예정
 	LocalDateTime endTime
 ) {

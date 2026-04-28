@@ -6,6 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record UpdateTimeDealRequest(
 	// LocalDateTime startTime,	//todo: mvp에서는 종료 시간만 설정
-	@NotNull LocalDateTime endtime
+	@NotNull LocalDateTime endTime
 ) {
 }
