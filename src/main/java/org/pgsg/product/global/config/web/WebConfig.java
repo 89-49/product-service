@@ -1,6 +1,6 @@
-package org.pgsg.product.config.web;
+package org.pgsg.product.global.config.web;
 
-import org.pgsg.product.config.security.UserContextInterceptor;
+import org.pgsg.product.global.config.security.UserContextInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;

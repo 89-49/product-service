@@ -11,6 +11,6 @@ public record UpdateTimeDealCommand(
 		Objects.requireNonNull(endTime);
 		//	todo: 고도화 후 작업 예정
 		// if(endTime.isBefore(start.plusMinutes(15)))
-		// 	throw new CustomException("InvalidTimeDealDurationException","end");
+		// 	throw new CustomException(InvalidTimeDealDurationException,"end");
 	}
 }

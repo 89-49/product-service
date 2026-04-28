@@ -1,5 +1,7 @@
 package org.pgsg.product.application.dto.command;
 
+import static org.pgsg.product.global.exception.ProductException.*;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -14,10 +16,10 @@ public record UpdateProductCommand(
 ) {
 	public UpdateProductCommand {
 		if(price!=null&&price<0)
-			throw new CustomException("PriceValidateException","price");
+			throw new CustomException(PriceValidateException,"price");
 
 		if(startTime!=null && endTime!=null
 			&&endTime.isBefore(startTime.plusMinutes(15)))
-			throw new CustomException("InvalidTimeDealDurationException","end");
+			throw new CustomException(InvalidTimeDealDurationException,"end");
 	}
 }
