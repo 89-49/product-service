@@ -23,11 +23,7 @@ public class JpaAuditConfig {
 			if (userId == null)
 				return Optional.of(SYSTEM_ID);
 
-			try {
-				return Optional.of(userId);
-			} catch (IllegalArgumentException e) {
-				return Optional.empty();
-			}
+			return Optional.of(userId);
 		};
 	}
 }
