@@ -34,3 +34,8 @@ error:
       code: "P007"
       message: "종료 시간은 시작 시간보다 최소 15분 이후로 설정 가능합니다."
       status: 409
+
+    ProductNameValidException:
+      code: "P008"
+      message: "상품명은 필수입니다."
+      status: 400
