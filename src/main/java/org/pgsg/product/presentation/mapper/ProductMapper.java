@@ -29,7 +29,6 @@ public interface ProductMapper {
 	CreateProductResponse toResponse(CreateProductResult result);
 	UpdateProductResponse toResponse(UpdateProductResult result);
 	FindProductResponse toResponse(FindProductResult result);
-	ListProductResponse toResponse(ListProductResult result);
 
 
 }
