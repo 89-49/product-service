@@ -2,11 +2,16 @@ package org.pgsg.product.application.service;
 
 import static org.pgsg.product.global.exception.ProductException.*;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import org.pgsg.common.exception.CustomException;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
+import org.pgsg.product.application.dto.command.UpdateProductCommand;
+import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
 import org.pgsg.product.application.dto.result.CreateProductResult;
+import org.pgsg.product.application.dto.result.UpdateProductResult;
+import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.global.config.security.UserContext;
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.repository.ProductRepository;
@@ -20,11 +25,10 @@ import lombok.RequiredArgsConstructor;
 * */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly=true)
+@Transactional
 public class ProductCommandService {
 	private final ProductRepository productRepository;
 
-	@Transactional
 	public CreateProductResult createProduct(CreateProductCommand command) {
 		Product product =Product.create(
 			command.name(),command.price(),command.description());	//todo: 스케줄 입력 시기 변경 후 수정 필요
@@ -34,12 +38,51 @@ public class ProductCommandService {
 		return new CreateProductResult(saved.getName(),saved.getPrice(),saved.getDescription());
 	}
 
-	@Transactional
 	public void deleteProduct(UUID id) {
-		Product product=productRepository.findById(id)
-			.orElseThrow(()->new CustomException(ProductNotFoundException));
+		Product product=findById(id);
 
-		UUID userId = Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");
+		UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
+			UUID.randomUUID();	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
 		product.deleteProduct(userId);
+	}
+
+	public UpdateProductResult updateProduct(UUID id, UpdateProductCommand command) {
+		Product product = findById(id);
+
+		TimeDealSchedule newSchedule =TimeDealSchedule.of(command.startTime(),command.endTime());
+		product.update(command.name(),command.price(), command.description(), newSchedule);
+
+		Product saved=productRepository.saveAndFlush(product);
+
+		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
+			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());
+	}
+
+	public UpdateProductResult setTimeDeal(UUID id, UpdateTimeDealCommand command) {
+		Product product = findById(id);
+
+		product.setTimeDealSchedule(command.endTime());
+
+		Product saved=productRepository.saveAndFlush(product);
+
+		//todo: 타임딜 설정 후 이벤트 발행 부분 추가 예정 - mvp 이후 이벤트 발행 위치 변경 예정
+
+		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
+			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());
+	}
+
+	public void cancelSaleProduct(UUID id) {
+		Product product = findById(id);
+		product.cancelSale();
+
+		UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
+			UUID.randomUUID();	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
+		product.deleteProduct(id);	//todo: 삭제와 판매 취소를 동일하게 할지 좀 더 고려
+	}
+
+
+	private Product findById(UUID id) {
+		return productRepository.findById(id)
+			.orElseThrow(()->new CustomException(ProductNotFoundException));
 	}
 }

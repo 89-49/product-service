@@ -9,4 +9,6 @@ public interface ProductRepository {
 	Product save(Product product);
 
 	Optional<Product> findById(UUID id);
+
+	Product saveAndFlush(Product product);
 }

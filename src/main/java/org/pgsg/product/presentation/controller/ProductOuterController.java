@@ -5,6 +5,9 @@ import java.util.UUID;
 
 import org.pgsg.common.response.CommonResponse;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
+import org.pgsg.product.application.dto.command.UpdateProductCommand;
+import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
+import org.pgsg.product.application.dto.result.UpdateProductResult;
 import org.pgsg.product.application.service.ProductCommandService;
 import org.pgsg.product.presentation.dto.request.CreateProductRequest;
 import org.pgsg.product.presentation.dto.request.UpdateProductRequest;
@@ -56,21 +59,28 @@ public class ProductOuterController {
 
 	//스케줄 설정 - //todo: mvp 임시 요청
 	@PatchMapping("/{productId}/schedule")
-	public CommonResponse<UpdateProductResponse> updateTimeDealSchedule(@PathVariable UUID productId,@Valid @RequestBody UpdateTimeDealRequest request) {
-		return null;	//todo: 응용 계층 구현 후 수정
+	public CommonResponse<UpdateProductResponse> setTimeDealSchedule(@PathVariable UUID productId,@Valid @RequestBody UpdateTimeDealRequest request) {
+		UpdateTimeDealCommand command=mapper.toCommand(request);
+		UpdateProductResult result =productCommandService.setTimeDeal(productId, command);
+		UpdateProductResponse response=mapper.toResponse(result);
+		return CommonResponse.success(response);
 	}
 
 
 	//상품 정보 수정
 	@PatchMapping("/{productId}")
 	public CommonResponse<UpdateProductResponse> updateProduct(@PathVariable UUID productId, @Valid @RequestBody UpdateProductRequest request) {
-		return null;	//todo: 응용 계층 구현 후 수정
+		UpdateProductCommand command=mapper.toCommand(request);
+		UpdateProductResult result =productCommandService.updateProduct(productId, command);
+		UpdateProductResponse response=mapper.toResponse(result);
+		return CommonResponse.success(response);
 	}
 
 	//상품 판매 취소
 	@PatchMapping("/{productId}/cancel")
-	public void cancelSaleProduct(@PathVariable UUID productId) {
-		//todo: 응용 계층 구현 후 수정
+	public CommonResponse<Void> cancelSaleProduct(@PathVariable UUID productId) {
+		productCommandService.cancelSaleProduct(productId);
+		return  CommonResponse.success(null);
 	}
 
 	//상품 상세 조회
@@ -86,7 +96,7 @@ public class ProductOuterController {
 		return null;	//todo: 응용 계층 구현 후 수정
 	}
 
-	//고도화: 상품 검색, 관심 상품 추가, 관심 상품 삭제
+	//todo: 고도화: 관심 상품 추가, 관심 상품 삭제
 
 
 	//util
