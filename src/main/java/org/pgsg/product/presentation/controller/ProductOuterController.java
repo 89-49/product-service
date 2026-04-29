@@ -7,8 +7,11 @@ import org.pgsg.common.response.CommonResponse;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
+import org.pgsg.product.application.dto.info.ProductInfo;
+import org.pgsg.product.application.dto.result.FindProductResult;
 import org.pgsg.product.application.dto.result.UpdateProductResult;
 import org.pgsg.product.application.service.ProductCommandService;
+import org.pgsg.product.application.service.ProductQueryService;
 import org.pgsg.product.presentation.dto.request.CreateProductRequest;
 import org.pgsg.product.presentation.dto.request.UpdateProductRequest;
 import org.pgsg.product.presentation.dto.request.UpdateTimeDealRequest;
@@ -39,7 +42,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProductOuterController {
 	private final ProductCommandService productCommandService;
+	private final ProductQueryService productQueryService;
 	private final ProductMapper mapper;
+	private final ProductMapper productMapper;
 
 	//상품 등록
 	@PostMapping
@@ -86,14 +91,19 @@ public class ProductOuterController {
 	//상품 상세 조회
 	@GetMapping("/{productId}")
 	public CommonResponse<FindProductResponse> findProductById(@PathVariable UUID productId) {
-		return null;	//todo: 응용 계층 구현 후 수정
+		FindProductResult result = productQueryService.findProduct(productId);
+		FindProductResponse response=mapper.toResponse(result);
+		return CommonResponse.success(response);
 	}
 
 	//상품 목록 조회
 	@GetMapping
-	public CommonResponse<Slice<ProductListItem>> getAllProducts(
+	public CommonResponse<Slice<ProductListItem>> getProducts(
 		@PageableDefault(size = 10, direction = Sort.Direction.DESC) Pageable pageable) {
-		return null;	//todo: 응용 계층 구현 후 수정
+		pageable=validatePageSize(pageable);
+		Slice<ProductInfo> infoList=productQueryService.getProducts(pageable);
+		Slice<ProductListItem> response= infoList.map(productMapper::toResponse);
+		return CommonResponse.success(response);
 	}
 
 	//todo: 고도화: 관심 상품 추가, 관심 상품 삭제

@@ -66,6 +66,7 @@ public class ProductCommandService {
 			schedule == null ? null : schedule.getStartTime(),
 			schedule == null ? null : schedule.getEndTime()
 		);
+	}
 
 	public UpdateProductResult setTimeDeal(UUID id, UpdateTimeDealCommand command) {
 		Product product = findById(id);
