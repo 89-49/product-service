@@ -58,9 +58,14 @@ public class ProductCommandService {
 
 		Product saved=productRepository.saveAndFlush(product);
 
-		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
-			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());
-	}
+		TimeDealSchedule schedule = saved.getTimeDealSchedule();
+		return new UpdateProductResult(
+			saved.getName(),
+			saved.getPrice(),
+			saved.getDescription(),
+			schedule == null ? null : schedule.getStartTime(),
+			schedule == null ? null : schedule.getEndTime()
+		);
 
 	public UpdateProductResult setTimeDeal(UUID id, UpdateTimeDealCommand command) {
 		Product product = findById(id);
