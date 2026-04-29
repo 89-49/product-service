@@ -51,12 +51,13 @@ public class ProductCommandService {
 		Product product = findById(id);
 
 		//todo: timeDealSchedule 설정부분 리팩토링 후 수정 예정
-		TimeDealSchedule newSchedule = command.endTime()==null ? null
-			: TimeDealSchedule.of(command.startTime() == null ? LocalDateTime.now() : command.startTime() ,command.endTime());
+		TimeDealSchedule newSchedule = command.endTime() == null ? null
+			: TimeDealSchedule.of(command.startTime() == null ? LocalDateTime.now() : command.startTime(),
+			command.endTime());
 
-		product.update(command.name(),command.price(), command.description(), newSchedule);
+		product.update(command.name(), command.price(), command.description(), newSchedule);
 
-		Product saved=productRepository.saveAndFlush(product);
+		Product saved = productRepository.saveAndFlush(product);
 
 		TimeDealSchedule schedule = saved.getTimeDealSchedule();
 		return new UpdateProductResult(
@@ -66,7 +67,7 @@ public class ProductCommandService {
 			schedule == null ? null : schedule.getStartTime(),
 			schedule == null ? null : schedule.getEndTime()
 		);
-
+	}
 	public UpdateProductResult setTimeDeal(UUID id, UpdateTimeDealCommand command) {
 		Product product = findById(id);
 
