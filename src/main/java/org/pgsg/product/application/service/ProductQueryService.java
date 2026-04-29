@@ -7,8 +7,8 @@ import java.util.UUID;
 import org.pgsg.common.exception.CustomException;
 import org.pgsg.product.application.dto.info.ProductInfo;
 import org.pgsg.product.application.dto.result.FindProductResult;
+import org.pgsg.product.application.mapper.ProductApplicationMapper;
 import org.pgsg.product.domain.repository.ProductRepository;
-import org.pgsg.product.presentation.mapper.ProductMapper;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -21,17 +21,17 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly=true)
 public class ProductQueryService {
 	private final ProductRepository productRepository;	//todo: cqrs 적용 시 변경
-	private final ProductMapper productMapper;
+	private final ProductApplicationMapper mapper;
 
 	public FindProductResult findProduct(UUID id) {
 		return productRepository.findById(id)
-			.map(productMapper::toFindResult)
+			.map(mapper::toFindResult)
 			.orElseThrow(()->new CustomException(ProductNotFoundException));
 	}
 
 	public Slice<ProductInfo> getProducts(Pageable pageable) {
 		return productRepository.findAll(pageable)
-			.map(productMapper::toInfoResult);
+			.map(mapper::toInfoResult);
 	}
 
 
