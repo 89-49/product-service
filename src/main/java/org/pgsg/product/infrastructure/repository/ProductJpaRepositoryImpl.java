@@ -23,4 +23,9 @@ public class ProductJpaRepositoryImpl implements ProductRepository {
 	public Optional<Product> findById(UUID id) {
 		return productJpaRepository.findById(id);
 	}
+
+	@Override
+	public Product saveAndFlush(Product product) {
+		return productJpaRepository.saveAndFlush(product);
+	}
 }
