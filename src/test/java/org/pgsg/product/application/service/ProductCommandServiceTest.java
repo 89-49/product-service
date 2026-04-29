@@ -20,9 +20,14 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.pgsg.common.exception.CustomException;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
+import org.pgsg.product.application.dto.command.UpdateProductCommand;
+import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
 import org.pgsg.product.domain.model.Product;
+import org.pgsg.product.domain.model.ProductStatus;
 import org.pgsg.product.domain.repository.ProductRepository;
 import org.pgsg.product.global.config.security.UserContext;
+import org.pgsg.product.presentation.dto.request.UpdateProductRequest;
+import org.springframework.security.core.parameters.P;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Product 서비스 코드 테스트")
@@ -89,5 +94,54 @@ class ProductCommandServiceTest {
 
 		//then
 		assertThat(product.getDeletedBy()).isEqualTo(userId);
+	}
+
+	@Test
+	void updateProduct() {
+		//given
+		Product product = Product.create(PRODUCT_NAME, PRICE, null);
+		UpdateProductCommand command=new UpdateProductCommand("test",1,null,LocalDateTime.now(),LocalDateTime.now().plusHours(1));
+		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
+		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		//when
+		productCommandService.updateProduct(UUID.randomUUID(),command);
+
+		//then
+		verify(productRepository).saveAndFlush(captor.capture());
+		Product saved=captor.getValue();
+		assertThat(saved.getName()).isEqualTo("test");
+		assertThat(saved.getPrice()).isEqualTo(1);
+
+	}
+
+	@Test
+	void 타임딜_설정(){
+		//given
+		Product product = Product.create(PRODUCT_NAME, PRICE, null);
+		UpdateTimeDealCommand command=new UpdateTimeDealCommand(LocalDateTime.now().plusHours(1));
+		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
+		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		//when
+		productCommandService.setTimeDeal(UUID.randomUUID(),command);
+
+		//then
+		verify(productRepository).saveAndFlush(captor.capture());
+		Product saved=captor.getValue();
+		assertThat(saved.getTimeDealSchedule()).isNotNull();
+	}
+
+	@Test
+	void 판매취소(){
+		//given
+		Product product = Product.create(PRODUCT_NAME, PRICE, null);
+		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
+
+		//when
+		productCommandService.cancelSaleProduct(UUID.randomUUID());
+
+		//then
+		assertThat(product.getStatus()).isEqualTo(ProductStatus.SALE_CANCELED);
 	}
 }

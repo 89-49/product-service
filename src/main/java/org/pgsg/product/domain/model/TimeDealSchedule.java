@@ -29,7 +29,7 @@ public class TimeDealSchedule {
 	}
 
 	public void validateTimeDealSchedule() {
-		Objects.requireNonNull(startTime,"시작 시간이 누락되었습니다.");
+		// Objects.requireNonNull(startTime,"시작 시간이 누락되었습니다.");	//todo: 누락 시 현재 시각으로 설정할 지 고려
 		Objects.requireNonNull(endTime,"종료 시간이 누락되었습니다.");
 
 		// if(startTime.isBefore(LocalDateTime.now()))	//todo: 타임딜 스케줄링 고도화 시 사용

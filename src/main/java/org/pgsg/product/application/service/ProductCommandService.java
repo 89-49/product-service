@@ -2,6 +2,7 @@ package org.pgsg.product.application.service;
 
 import static org.pgsg.product.global.exception.ProductException.*;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -49,7 +50,10 @@ public class ProductCommandService {
 	public UpdateProductResult updateProduct(UUID id, UpdateProductCommand command) {
 		Product product = findById(id);
 
-		TimeDealSchedule newSchedule =TimeDealSchedule.of(command.startTime(),command.endTime());
+		//todo: timeDealSchedule 설정부분 리팩토링 후 수정 예정
+		TimeDealSchedule newSchedule = command.endTime()==null ? null
+			: TimeDealSchedule.of(command.startTime() == null ? LocalDateTime.now() : command.startTime() ,command.endTime());
+
 		product.update(command.name(),command.price(), command.description(), newSchedule);
 
 		Product saved=productRepository.saveAndFlush(product);
@@ -75,9 +79,9 @@ public class ProductCommandService {
 		Product product = findById(id);
 		product.cancelSale();
 
-		UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
-			UUID.randomUUID();	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
-		product.deleteProduct(id);	//todo: 삭제와 판매 취소를 동일하게 할지 좀 더 고려
+		// UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
+		// 	UUID.fromString("00000000-0000-0000-0000-000000000000");	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
+		// product.deleteProduct(id);	//todo: 삭제와 판매 취소를 동일하게 할지 좀 더 고려
 	}
 
 
