@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
-public class ProductJpaRepositoryImpl implements ProductRepository {
+public class ProductRepositoryImpl implements ProductRepository {
 	private final ProductJpaRepository productJpaRepository;
 
 	@Override

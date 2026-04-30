@@ -1,9 +1,8 @@
 package org.pgsg.product.application.dto.command;
 
-import static org.pgsg.product.global.exception.ProductException.*;
+import static org.pgsg.product.global.exception.ProductErrorCode.*;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 import org.pgsg.common.exception.CustomException;
 

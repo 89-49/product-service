@@ -1,14 +1,10 @@
 package org.pgsg.product.application.dto.command;
 
-import static org.pgsg.product.global.exception.ProductException.*;
+import static org.pgsg.product.global.exception.ProductErrorCode.*;
 
 import java.util.Objects;
 
 import org.pgsg.common.exception.CustomException;
-
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public record CreateProductCommand(
 	String name,

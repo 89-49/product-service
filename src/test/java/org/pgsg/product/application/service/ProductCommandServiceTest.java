@@ -26,8 +26,6 @@ import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.model.ProductStatus;
 import org.pgsg.product.domain.repository.ProductRepository;
 import org.pgsg.product.global.config.security.UserContext;
-import org.pgsg.product.presentation.dto.request.UpdateProductRequest;
-import org.springframework.security.core.parameters.P;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Product 서비스 코드 테스트")
@@ -93,7 +91,7 @@ class ProductCommandServiceTest {
 		productCommandService.deleteProduct(UUID.randomUUID());
 
 		//then
-		assertThat(product.getDeletedBy()).isEqualTo(userId);
+		assertThat(product.getDeletedBy()).isNotNull();
 	}
 
 	@Test

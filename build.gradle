@@ -19,6 +19,7 @@ ext {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         url = uri("https://maven.pkg.github.com/89-49/common")
@@ -30,7 +31,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.pgsg:common:0.0.1-SNAPSHOT'
+    implementation 'org.pgsg:common:0.2.0-SNAPSHOT'
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.mapstruct:mapstruct:1.6.0'
 
@@ -41,6 +42,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
