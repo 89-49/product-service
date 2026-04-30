@@ -1,5 +1,7 @@
 package org.pgsg.product.domain.model;
 
+import static org.pgsg.product.global.exception.ProductException.*;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -36,6 +38,6 @@ public class TimeDealSchedule {
 		// 	throw new CustomException("StartTimeValidateException","startTime");
 
 		if (endTime.isBefore(startTime))
-			throw new CustomException("EndTimeValidateException","endTime");
+			throw new CustomException(EndTimeValidateException,"endTime");
 	}
 }

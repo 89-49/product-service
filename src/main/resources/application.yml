@@ -5,5 +5,3 @@ spring:
   config:
     import:
       - optional:configserver:${CONFIGSERVER}
-      - classpath*:application-error.yml
-      - classpath:application-error-product.yml

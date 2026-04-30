@@ -1,22 +1,31 @@
 package org.pgsg.product.global.exception;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.pgsg.common.exception.ErrorCode;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class ProductException {
+@Getter
+@RequiredArgsConstructor
+public enum ProductException implements ErrorCode{
 	//도메인 관련
-	public static final String PriceValidateException="PriceValidateException";
-	public static final String InvalidStatusException="InvalidStatusException";
-	public static final String ProductNameValidException="ProductNameValidException";
+	PriceValidateException("product.validation.domain.price"),
+	InvalidStatusException("product.validation.business.update-status"),
+	ProductNameValidException("product.validation.domain.name"),
 
 	//타임딜 관련
-	public static final String EndTimeValidateException="EndTimeValidateException";
-	public static final String StartTimeValidateException="StartTimeValidateException";
-	public static final String InvalidChangeScheduleException="InvalidChangeScheduleException";
-	public static final String InvalidTimeDealDurationException="InvalidTimeDealDurationException";
+	EndTimeValidateException("product.validation.domain.timedeal.end"),
+	StartTimeValidateException("product.validation.domain.timedeal.start"),
+	InvalidChangeScheduleException("product.validation.business.update-timedeal"),
+	InvalidTimeDealDurationException("product.validation.business.set-timedeal"),
 
 	//기타
-	public static final String ProductNotFoundException="ProductNotFoundException";
+	ProductNotFoundException("product.resource.not-found.product");
 
+
+	private final String errorKey;
+
+	@Override
+	public String getErrorKey() {
+		return this.errorKey;
+	}
 }
