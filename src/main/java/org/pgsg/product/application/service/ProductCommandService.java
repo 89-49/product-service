@@ -1,9 +1,8 @@
 package org.pgsg.product.application.service;
 
-import static org.pgsg.product.global.exception.ProductException.*;
+import static org.pgsg.product.global.exception.ProductErrorCode.*;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.UUID;
 
 import org.pgsg.common.exception.CustomException;
@@ -13,7 +12,6 @@ import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
 import org.pgsg.product.application.dto.result.CreateProductResult;
 import org.pgsg.product.application.dto.result.UpdateProductResult;
 import org.pgsg.product.domain.model.TimeDealSchedule;
-import org.pgsg.product.global.config.security.UserContext;
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.repository.ProductRepository;
 import org.springframework.stereotype.Service;

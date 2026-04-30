@@ -1,6 +1,6 @@
 package org.pgsg.product.domain.model;
 
-import static org.pgsg.product.global.exception.ProductException.*;
+import static org.pgsg.product.global.exception.ProductErrorCode.*;
 
 import java.time.LocalDateTime;
 import java.util.Objects;

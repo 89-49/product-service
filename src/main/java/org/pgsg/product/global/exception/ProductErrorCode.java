@@ -6,7 +6,7 @@ import org.pgsg.common.exception.ErrorCode;
 
 @Getter
 @RequiredArgsConstructor
-public enum ProductException implements ErrorCode{
+public enum ProductErrorCode implements ErrorCode{
 	//도메인 관련
 	PriceValidateException("product.validation.domain.price"),
 	InvalidStatusException("product.validation.business.update-status"),
