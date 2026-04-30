@@ -18,7 +18,7 @@ import org.pgsg.product.presentation.dto.response.ProductListItem;
 import org.pgsg.product.presentation.dto.response.UpdateProductResponse;
 
 @Mapper(componentModel="spring")
-public interface ProductMapper {
+public interface ProductPresentationMapper {
 	//presentation -> application
 	CreateProductCommand toCommand(CreateProductRequest request);
 	UpdateProductCommand toCommand(UpdateProductRequest request);
@@ -29,8 +29,4 @@ public interface ProductMapper {
 	UpdateProductResponse toResponse(UpdateProductResult result);
 	FindProductResponse toResponse(FindProductResult result);
 	ProductListItem toResponse(ProductInfo productInfo);
-
-	//entity -> dto
-	ProductInfo toInfoResult(Product product);
-	FindProductResult toFindResult(Product product);
 }

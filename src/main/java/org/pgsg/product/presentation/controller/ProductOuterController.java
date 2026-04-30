@@ -19,7 +19,7 @@ import org.pgsg.product.presentation.dto.response.CreateProductResponse;
 import org.pgsg.product.presentation.dto.response.FindProductResponse;
 import org.pgsg.product.presentation.dto.response.ProductListItem;
 import org.pgsg.product.presentation.dto.response.UpdateProductResponse;
-import org.pgsg.product.presentation.mapper.ProductMapper;
+import org.pgsg.product.presentation.mapper.ProductPresentationMapper;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -43,8 +43,8 @@ import lombok.RequiredArgsConstructor;
 public class ProductOuterController {
 	private final ProductCommandService productCommandService;
 	private final ProductQueryService productQueryService;
-	private final ProductMapper mapper;
-	private final ProductMapper productMapper;
+	private final ProductPresentationMapper mapper;
+	private final ProductPresentationMapper productPresentationMapper;
 
 	//상품 등록
 	@PostMapping
@@ -102,7 +102,7 @@ public class ProductOuterController {
 		@PageableDefault(size = 10, direction = Sort.Direction.DESC) Pageable pageable) {
 		pageable=validatePageSize(pageable);
 		Slice<ProductInfo> infoList=productQueryService.getProducts(pageable);
-		Slice<ProductListItem> response= infoList.map(productMapper::toResponse);
+		Slice<ProductListItem> response= infoList.map(productPresentationMapper::toResponse);
 		return CommonResponse.success(response);
 	}
 
