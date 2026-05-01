@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.pgsg.common.event.OutboxEvent;
-import org.pgsg.common.event.OutboxEventListener;
 import org.pgsg.common.exception.CustomException;
 import org.pgsg.common.util.JsonUtil;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
@@ -19,6 +18,8 @@ import org.pgsg.product.domain.event.ProductCreatedEvent;
 import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.repository.ProductRepository;
+import org.pgsg.product.global.config.TopicConfig;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,8 +33,9 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class ProductCommandService {
 	private final ProductRepository productRepository;
-	private final OutboxEventListener outboxEventListener;
+	private final ApplicationEventPublisher eventPublisher;
 	private final ProductApplicationMapper mapper;
+	private final TopicConfig topicConfig;
 
 	public CreateProductResult createProduct(CreateProductCommand command) {
 		Product product =Product.create(
@@ -83,9 +85,9 @@ public class ProductCommandService {
 		//todo: mvp 이후 이벤트 발행 위치 변경 예정
 		ProductCreatedEvent payload = mapper.toCreatedEvent(product);
 		String jsonPayload=JsonUtil.toJson(payload);
-		OutboxEvent event=new OutboxEvent(saved.getId(), "Product", saved.getId(),ProductEventType.CREATED.getType(),jsonPayload);
+		OutboxEvent event=new OutboxEvent(saved.getId(), "Product", saved.getId(), topicConfig.getProduct().getCreated(), jsonPayload);
 
-		outboxEventListener.recordOutbox(event);
+		eventPublisher.publishEvent(event);
 
 		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
 			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());

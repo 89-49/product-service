@@ -3,9 +3,10 @@ package org.pgsg.product.infrastructure.kafka;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.pgsg.common.event.OutboxEvent;
 import org.pgsg.common.messaging.annotation.IdempotentConsumer;
 import org.pgsg.product.application.service.ProductCommandService;
-import org.pgsg.product.domain.event.ProductEvent;
+import org.pgsg.product.global.config.TopicConfig;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -18,31 +19,31 @@ public class ProductKafkaConsumer {
 	//todo: 실제 이벤트 확인 후 Productevent 수정 예정
 
 	//예약 취소 -> 판매 대기 중으로 변경 후 타임딜 등 재설정 대기
-	@KafkaListener(topics = "prod-reservation-cancelled",groupId = "product-group")
+	@KafkaListener(topics = "#{topicConfig.reservation.cancelled}",groupId = "product-group")
 	@IdempotentConsumer("product:reservation-cancelled")
-	public void handleReservationCancelled(ConsumerRecord<String, ProductEvent>record) {
-		ProductEvent event=record.value();
-		UUID productId=event.productId();
+	public void handleReservationCancelled(ConsumerRecord<String, OutboxEvent>record) {
+		OutboxEvent event=record.value();
+		UUID productId=event.correlationId();
 
 		productCommandService.pendingSale(productId);
 	}
 
 	//예약 성공 -> 거래 중으로 상태 변경
-	@KafkaListener(topics = "prod-reservation-complete",groupId = "product-group")
+	@KafkaListener(topics = "#{topicConfig.reservation.completed}",groupId = "product-group")
 	@IdempotentConsumer("product:reservation-complete")
-	public void handleReservationComplete(ConsumerRecord<String, ProductEvent>record) {
-		ProductEvent event=record.value();
-		UUID productId=event.productId();
+	public void handleReservationComplete(ConsumerRecord<String, OutboxEvent>record) {
+		OutboxEvent event=record.value();
+		UUID productId=event.correlationId();
 
 		productCommandService.completeReservation(productId);
 	}
 
 	//거래 완료
-	@KafkaListener(topics = "prod-trade-completed", groupId = "product-group")
+	@KafkaListener(topics = "#{topicConfig.trade.completed}", groupId = "product-group")
 	@IdempotentConsumer("product:trade-completed")
-	public void handleTradeCompleted(ConsumerRecord<String, ProductEvent>record) {
-		ProductEvent event=record.value();
-		UUID productId=event.productId();
+	public void handleTradeCompleted(ConsumerRecord<String, OutboxEvent>record) {
+		OutboxEvent event=record.value();
+		UUID productId=event.correlationId();
 
 		productCommandService.completeTrade(productId);
 	}

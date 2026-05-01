@@ -17,6 +17,7 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 .env
+.gitignore
 
 ### IntelliJ IDEA ###
 .idea
@@ -36,3 +37,5 @@ out/
 
 ### VS Code ###
 .vscode/
+
+**/ssl/kafka.server.truststore.jks
