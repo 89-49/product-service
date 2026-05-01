@@ -5,12 +5,17 @@ import static org.pgsg.product.global.exception.ProductErrorCode.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.pgsg.common.event.OutboxEvent;
+import org.pgsg.common.event.OutboxEventListener;
 import org.pgsg.common.exception.CustomException;
+import org.pgsg.common.util.JsonUtil;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
 import org.pgsg.product.application.dto.result.CreateProductResult;
 import org.pgsg.product.application.dto.result.UpdateProductResult;
+import org.pgsg.product.application.mapper.ProductApplicationMapper;
+import org.pgsg.product.domain.event.ProductCreatedEvent;
 import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.repository.ProductRepository;
@@ -27,13 +32,15 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class ProductCommandService {
 	private final ProductRepository productRepository;
+	private final OutboxEventListener outboxEventListener;
+	private final ProductApplicationMapper mapper;
 
 	public CreateProductResult createProduct(CreateProductCommand command) {
 		Product product =Product.create(
 			command.name(),command.price(),command.description());	//todo: 스케줄 입력 시기 변경 후 수정 필요
 
 		Product saved=productRepository.save(product);
-
+		//todo: 스케줄링 도구 적용 시 생성 후 스케줄이 등록되도록 고도화 예정
 		return new CreateProductResult(saved.getName(),saved.getPrice(),saved.getDescription());
 	}
 
@@ -73,19 +80,39 @@ public class ProductCommandService {
 
 		Product saved=productRepository.saveAndFlush(product);
 
-		//todo: 타임딜 설정 후 이벤트 발행 부분 추가 예정 - mvp 이후 이벤트 발행 위치 변경 예정
+		//todo: mvp 이후 이벤트 발행 위치 변경 예정
+		ProductCreatedEvent payload = mapper.toCreatedEvent(product);
+		String jsonPayload=JsonUtil.toJson(payload);
+		OutboxEvent event=new OutboxEvent(saved.getId(), "Product", saved.getId(),ProductEventType.CREATED.getType(),jsonPayload);
+
+		outboxEventListener.recordOutbox(event);
 
 		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
 			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());
 	}
 
-	public void cancelSaleProduct(UUID id) {
+	public void cancelSale(UUID id) {
 		Product product = findById(id);
 		product.cancelSale();
 
 		// UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
 		// 	UUID.fromString("00000000-0000-0000-0000-000000000000");	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
 		// product.deleteProduct(id);	//todo: 삭제와 판매 취소를 동일하게 할지 좀 더 고려
+	}
+
+	public void completeTrade(UUID id) {
+		Product product = findById(id);
+		product.complete();
+	}
+
+	public void completeReservation(UUID id) {
+		Product product = findById(id);
+		product.startTrade();
+	}
+
+	public void pendingSale(UUID id) {
+		Product product = findById(id);
+		product.revertToReserving();
 	}
 
 

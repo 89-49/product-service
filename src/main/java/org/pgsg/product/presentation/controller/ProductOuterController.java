@@ -84,7 +84,7 @@ public class ProductOuterController {
 	//상품 판매 취소
 	@PatchMapping("/{productId}/cancel")
 	public CommonResponse<Void> cancelSaleProduct(@PathVariable UUID productId) {
-		productCommandService.cancelSaleProduct(productId);
+		productCommandService.cancelSale(productId);
 		return  CommonResponse.success(null);
 	}
 

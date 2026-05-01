@@ -137,7 +137,7 @@ class ProductCommandServiceTest {
 		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
 
 		//when
-		productCommandService.cancelSaleProduct(UUID.randomUUID());
+		productCommandService.cancelSale(UUID.randomUUID());
 
 		//then
 		assertThat(product.getStatus()).isEqualTo(ProductStatus.SALE_CANCELED);
