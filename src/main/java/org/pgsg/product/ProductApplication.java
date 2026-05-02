@@ -2,11 +2,14 @@ package org.pgsg.product;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Import;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 
-@SpringBootApplication(scanBasePackages = {"org.pgsg.product", "org.pgsg.common"})
-@Import(org.pgsg.common.event.OutboxEventListener.class)
+@SpringBootApplication(scanBasePackages = "org.pgsg"
+,exclude = {
+	SecurityAutoConfiguration.class,
+	UserDetailsServiceAutoConfiguration.class
+})
 public class ProductApplication {
 
 	public static void main(String[] args) {

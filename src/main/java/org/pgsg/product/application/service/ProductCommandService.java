@@ -15,15 +15,16 @@ import org.pgsg.product.application.dto.result.CreateProductResult;
 import org.pgsg.product.application.dto.result.UpdateProductResult;
 import org.pgsg.product.application.mapper.ProductApplicationMapper;
 import org.pgsg.product.domain.event.ProductCreatedEvent;
-import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.domain.model.Product;
+import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.domain.repository.ProductRepository;
 import org.pgsg.product.global.config.TopicConfig;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /*
 * 상품 추가, 삭제, 수정 조회, 이벤트 연결
@@ -31,9 +32,10 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ProductCommandService {
 	private final ProductRepository productRepository;
-	private final ApplicationEventPublisher eventPublisher;
+	private final KafkaTemplate<String, Object> kafkaTemplate;
 	private final ProductApplicationMapper mapper;
 	private final TopicConfig topicConfig;
 
@@ -84,10 +86,25 @@ public class ProductCommandService {
 
 		//todo: mvp 이후 이벤트 발행 위치 변경 예정
 		ProductCreatedEvent payload = mapper.toCreatedEvent(product);
+		System.out.println("1. payload 생성 완료");
 		String jsonPayload=JsonUtil.toJson(payload);
-		OutboxEvent event=new OutboxEvent(saved.getId(), "Product", saved.getId(), topicConfig.getProduct().getCreated(), jsonPayload);
+		System.out.println("2. jsonPayload 생성 완료: {}");
+		String eventType=topicConfig.getProduct().getCreated();
+		System.out.println("3. eventType: {}");
+		OutboxEvent event=new OutboxEvent(saved.getId(),  saved.getId(),"Product", eventType, jsonPayload);
+		System.out.println("4. OutboxEvent 생성 완료");
 
-		eventPublisher.publishEvent(event);
+		System.out.println("Kafka 이벤트 발행 시도: eventType={}, productId={}");
+		kafkaTemplate.send(eventType,event)
+			.whenComplete((result, ex) -> {
+				if (ex == null) {
+					log.info("Kafka 전송 성공: topic={}, offset={}",
+						result.getRecordMetadata().topic(),
+						result.getRecordMetadata().offset());
+				} else {
+					log.error("Kafka 전송 실패: {}", ex.getMessage(), ex);
+				}
+			});;
 
 		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
 			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());

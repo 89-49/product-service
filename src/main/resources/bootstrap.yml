@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: product-service
+
+  cloud:
+    config:
+      uri: ${CONFIG-SERVER:http://34.50.50.170:13100}
+      name: product-service,common
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
+
+  config:
+    import:
+      - optional:configserver:${CONFIG-SERVER:http://34.50.50.170:13100}
+
+eureka:
+  client:
+    enabled: false
