@@ -1,13 +1,18 @@
 package org.pgsg.product.infrastructure.kafka;
 
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.pgsg.common.event.OutboxEvent;
 import org.pgsg.common.messaging.annotation.IdempotentConsumer;
+import org.pgsg.common.util.JsonUtil;
 import org.pgsg.product.application.service.ProductCommandService;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,20 +35,18 @@ public class ProductKafkaConsumer {
 	//예약 성공 -> 거래 중으로 상태 변경
 	@KafkaListener(topics = "#{topicConfig.reservation.completed}",groupId = "product-group")
 	@IdempotentConsumer("product:reservation-complete")
-	public void handleReservationComplete(ConsumerRecord<String, OutboxEvent>record) {
-		OutboxEvent event=record.value();
-		UUID productId=event.correlationId();
-
+	public void handleReservationComplete(ConsumerRecord<String, String>record) {
+		Map<String,Object> map= JsonUtil.fromJson(record.value(), new TypeReference<>() {});
+		UUID productId = UUID.fromString((String) Objects.requireNonNull(map).get("correlationId"));
 		productCommandService.completeReservation(productId);
 	}
 
 	//거래 완료
 	@KafkaListener(topics = "#{topicConfig.trade.completed}", groupId = "product-group")
 	@IdempotentConsumer("product:trade-completed")
-	public void handleTradeCompleted(ConsumerRecord<String, OutboxEvent>record) {
-		OutboxEvent event=record.value();
-		UUID productId=event.correlationId();
-
+	public void handleTradeCompleted(ConsumerRecord<String, String>record) {
+		Map<String,Object> map= JsonUtil.fromJson(record.value(), new TypeReference<>() {});
+		UUID productId = UUID.fromString((String) Objects.requireNonNull(map).get("correlationId"));
 		productCommandService.completeTrade(productId);
 	}
 	//todo: 추가예정-취소 주체에 따른 세분화

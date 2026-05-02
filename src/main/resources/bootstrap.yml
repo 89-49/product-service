@@ -17,6 +17,16 @@ spring:
     import:
       - optional:configserver:${CONFIG-SERVER:http://34.50.50.170:13100}
 
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
 eureka:
   client:
     enabled: false
+
+logging:
+  level:
+    org.hibernate.orm.connections.pooling: DEBUG
+    org.hibernate.SQL: DEBUG
