@@ -19,7 +19,7 @@ import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.domain.repository.ProductRepository;
 import org.pgsg.product.global.config.TopicConfig;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,9 +35,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ProductCommandService {
 	private final ProductRepository productRepository;
-	private final KafkaTemplate<String, Object> kafkaTemplate;
 	private final ProductApplicationMapper mapper;
 	private final TopicConfig topicConfig;
+	private final ApplicationEventPublisher eventPublisher;
 
 	public CreateProductResult createProduct(CreateProductCommand command) {
 		Product product =Product.create(
@@ -86,25 +86,11 @@ public class ProductCommandService {
 
 		//todo: mvp 이후 이벤트 발행 위치 변경 예정
 		ProductCreatedEvent payload = mapper.toCreatedEvent(product);
-		System.out.println("1. payload 생성 완료");
 		String jsonPayload=JsonUtil.toJson(payload);
-		System.out.println("2. jsonPayload 생성 완료: {}");
 		String eventType=topicConfig.getProduct().getCreated();
-		System.out.println("3. eventType: {}");
 		OutboxEvent event=new OutboxEvent(saved.getId(),  saved.getId(),"Product", eventType, jsonPayload);
-		System.out.println("4. OutboxEvent 생성 완료");
 
-		System.out.println("Kafka 이벤트 발행 시도: eventType={}, productId={}");
-		kafkaTemplate.send(eventType,event)
-			.whenComplete((result, ex) -> {
-				if (ex == null) {
-					log.info("Kafka 전송 성공: topic={}, offset={}",
-						result.getRecordMetadata().topic(),
-						result.getRecordMetadata().offset());
-				} else {
-					log.error("Kafka 전송 실패: {}", ex.getMessage(), ex);
-				}
-			});;
+		eventPublisher.publishEvent(event);
 
 		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
 			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());

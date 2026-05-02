@@ -14,6 +14,7 @@ public interface ProductApplicationMapper {
 	ProductInfo toInfoResult(Product product);
 	@Mapping(source = "timeDealSchedule.startTime",target = "startTime")
 	@Mapping(source = "timeDealSchedule.endTime",target = "endTime")
+	@Mapping(source = "createdBy",target="sellerId")
 	FindProductResult toFindResult(Product product);
 
 	@Mapping(source="id",target ="productId")
