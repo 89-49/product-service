@@ -31,7 +31,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.pgsg:common:0.2.2-SNAPSHOT'
+    implementation 'org.pgsg:common:0.2.5-SNAPSHOT'
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.mapstruct:mapstruct:1.6.0'
     implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'
