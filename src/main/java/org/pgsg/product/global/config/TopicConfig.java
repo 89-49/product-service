@@ -3,6 +3,7 @@ package org.pgsg.product.global.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,18 +18,23 @@ public class TopicConfig {	//todo: 현재 필요한 부분만 우선 선언, 작
 
 	@Getter @Setter
 	public static class Product {
+		@NotBlank
 		private String created;
+		@NotBlank
 		private String updated;
+		@NotBlank
 		private String deleted;
 	}
 
 	@Getter @Setter
 	public static class Trade {
+		@NotBlank
 		private String completed;
 	}
 
 	@Getter @Setter
 	public static class Reservation {
+		@NotBlank
 		private String completed;
 		// private String cancelled;	//todo: 예약 취소 구현 후 수정
 	}

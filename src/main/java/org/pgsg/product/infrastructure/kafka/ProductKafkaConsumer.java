@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ProductKafkaConsumer {
@@ -36,8 +38,8 @@ public class ProductKafkaConsumer {
 	@KafkaListener(topics = "#{topicConfig.reservation.completed}",groupId = "product-group")
 	@IdempotentConsumer("product:reservation-complete")
 	public void handleReservationComplete(ConsumerRecord<String, String>record) {
-		Map<String,Object> map= JsonUtil.fromJson(record.value(), new TypeReference<>() {});
-		UUID productId = UUID.fromString((String) Objects.requireNonNull(map).get("correlationId"));
+		UUID productId = extractProductId(record.value());
+		if (productId == null) return;
 		productCommandService.completeReservation(productId);
 	}
 
@@ -45,9 +47,27 @@ public class ProductKafkaConsumer {
 	@KafkaListener(topics = "#{topicConfig.trade.completed}", groupId = "product-group")
 	@IdempotentConsumer("product:trade-completed")
 	public void handleTradeCompleted(ConsumerRecord<String, String>record) {
-		Map<String,Object> map= JsonUtil.fromJson(record.value(), new TypeReference<>() {});
-		UUID productId = UUID.fromString((String) Objects.requireNonNull(map).get("correlationId"));
+		UUID productId = extractProductId(record.value());
+		if (productId == null) return;
 		productCommandService.completeTrade(productId);
 	}
 	//todo: 추가예정-취소 주체에 따른 세분화
+
+	private UUID extractProductId(String value) {
+		try {
+			Map<String, Object> map = JsonUtil.fromJson(value, new TypeReference<>() {
+			});
+			if (map == null || !map.containsKey("correlationId")) {
+				log.error("correlationId 누락: {}", value);
+				return null;
+			}
+			return UUID.fromString((String) map.get("correlationId"));
+		} catch (IllegalArgumentException e) {
+			log.error("유효하지 않은 UUID 형식: {}", value, e);
+			return null;
+		} catch (Exception e) {
+			log.error("메시지 파싱 실패: {}", value, e);
+			return null;
+		}
+	}
 }
