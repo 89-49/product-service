@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import org.pgsg.common.event.OutboxEvent;
 import org.pgsg.common.exception.CustomException;
-import org.pgsg.common.util.JsonUtil;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
@@ -86,9 +85,8 @@ public class ProductCommandService {
 
 		//todo: mvp 이후 이벤트 발행 위치 변경 예정
 		ProductCreatedEvent payload = mapper.toCreatedEvent(product);
-		String jsonPayload=JsonUtil.toJson(payload);
 		String eventType=topicConfig.getProduct().getCreated();
-		OutboxEvent event=new OutboxEvent(saved.getId(),  saved.getId(),"Product", eventType, jsonPayload);
+		OutboxEvent event=new OutboxEvent(saved.getId(),  saved.getId(),"Product", eventType, payload);
 
 		eventPublisher.publishEvent(event);
 
