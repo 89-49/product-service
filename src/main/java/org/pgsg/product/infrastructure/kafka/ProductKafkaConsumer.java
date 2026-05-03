@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.pgsg.common.event.OutboxEvent;
+import org.pgsg.common.exception.CustomException;
 import org.pgsg.common.messaging.annotation.IdempotentConsumer;
 import org.pgsg.common.util.JsonUtil;
 import org.pgsg.product.application.service.ProductCommandService;
@@ -40,7 +41,11 @@ public class ProductKafkaConsumer {
 	public void handleReservationComplete(ConsumerRecord<String, String>record) {
 		UUID productId = extractProductId(record.value());
 		if (productId == null) return;
-		productCommandService.completeReservation(productId);
+		try {
+			productCommandService.completeReservation(productId);
+		} catch (CustomException e) {
+			log.error("도메인 예외 발생 - 스킵 처리: productId={}, error={}", productId, e.getMessage());
+		}
 	}
 
 	//거래 완료
@@ -49,7 +54,12 @@ public class ProductKafkaConsumer {
 	public void handleTradeCompleted(ConsumerRecord<String, String>record) {
 		UUID productId = extractProductId(record.value());
 		if (productId == null) return;
-		productCommandService.completeTrade(productId);
+		try {
+			productCommandService.completeTrade(productId);
+		} catch (CustomException e) {
+			log.error("도메인 예외 발생 - 스킵 처리: productId={}, error={}", productId, e.getMessage());
+		}
+
 	}
 	//todo: 추가예정-취소 주체에 따른 세분화
 
