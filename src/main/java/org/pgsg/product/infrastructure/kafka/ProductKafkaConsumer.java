@@ -68,15 +68,15 @@ public class ProductKafkaConsumer {
 			Map<String, Object> map = JsonUtil.fromJson(value, new TypeReference<>() {
 			});
 			if (map == null || !map.containsKey("correlationId")) {
-				log.error("correlationId 누락: {}", value);
+				log.error("correlationId 누락");
 				return null;
 			}
 			return UUID.fromString((String) map.get("correlationId"));
 		} catch (IllegalArgumentException e) {
-			log.error("유효하지 않은 UUID 형식: {}", value, e);
+			log.error("유효하지 않은 UUID 형식: {}", e.getMessage());
 			return null;
 		} catch (Exception e) {
-			log.error("메시지 파싱 실패: {}", value, e);
+			log.error("메시지 파싱 실패: {}", e.getMessage());
 			return null;
 		}
 	}
