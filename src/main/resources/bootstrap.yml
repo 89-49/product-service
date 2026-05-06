@@ -16,6 +16,7 @@ spring:
   config:
     import:
       - optional:configserver:${CONFIG-SERVER:http://34.50.50.170:13100}
+#      설정 서버 유레카 등록 시 변경
 
   jpa:
     hibernate:
@@ -24,5 +25,10 @@ spring:
 
 logging:
   level:
-    org.hibernate.orm.connections.pooling: DEBUG
-    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.connections.pooling: WARN
+    org.hibernate.SQL: WARN
+
+eureka:
+  client:
+    refresh:
+      enable: false

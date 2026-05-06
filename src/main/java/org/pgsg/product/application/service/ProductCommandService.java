@@ -43,6 +43,7 @@ public class ProductCommandService {
 			command.name(),command.price(),command.description());	//todo: 스케줄 입력 시기 변경 후 수정 필요
 
 		Product saved=productRepository.save(product);
+		log.info("Created product: productId:{}, userId:{}", saved.getId(),saved.getCreatedBy());
 		//todo: 스케줄링 도구 적용 시 생성 후 스케줄이 등록되도록 고도화 예정
 		return new CreateProductResult(saved.getId(),saved.getName(),saved.getPrice(),saved.getDescription());
 	}
@@ -53,6 +54,7 @@ public class ProductCommandService {
 		UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
 			UUID.randomUUID();	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
 		product.deleteProduct(userId);
+		log.info("Deleted product. productId:{}, userId:{}", id, userId);
 	}
 
 	public UpdateProductResult updateProduct(UUID id, UpdateProductCommand command) {
@@ -66,6 +68,7 @@ public class ProductCommandService {
 		product.update(command.name(), command.price(), command.description(), newSchedule);
 
 		Product saved = productRepository.saveAndFlush(product);
+		log.info("Updated product: productId:{}, userId:{}", saved.getId(), saved.getModifiedBy());
 
 		TimeDealSchedule schedule = saved.getTimeDealSchedule();
 		return new UpdateProductResult(
@@ -82,6 +85,7 @@ public class ProductCommandService {
 		product.setTimeDealSchedule(command.endTime());
 
 		Product saved=productRepository.saveAndFlush(product);
+		log.info("Set Timedeal: productId:{}, userId:{}", saved.getId(), saved.getModifiedBy());
 
 		//todo: mvp 이후 이벤트 발행 위치 변경 예정
 		ProductCreatedEvent payload = mapper.toCreatedEvent(product);
@@ -89,6 +93,8 @@ public class ProductCommandService {
 		OutboxEvent event=new OutboxEvent(saved.getId(),  saved.getId(),"Product", eventType, payload);
 
 		eventPublisher.publishEvent(event);
+		log.info("event is published. productId:{}, eventType:{}", saved.getId(), eventType);
+
 
 		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
 			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());
@@ -97,6 +103,7 @@ public class ProductCommandService {
 	public void cancelSale(UUID id) {
 		Product product = findById(id);
 		product.cancelSale();
+		log.info("Sale is cancelled. productId:{}", product.getId());
 
 		// UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
 		// 	UUID.fromString("00000000-0000-0000-0000-000000000000");	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
@@ -106,16 +113,19 @@ public class ProductCommandService {
 	public void completeTrade(UUID id) {
 		Product product = findById(id);
 		product.complete();
+		log.info("Trade is completed. productId:{}", product.getId());
 	}
 
 	public void completeReservation(UUID id) {
 		Product product = findById(id);
 		product.startTrade();
+		log.info("Reservation is completed. productId:{}", product.getId());
 	}
 
 	public void pendingSale(UUID id) {
 		Product product = findById(id);
 		product.revertToReserving();
+		log.info("This product revert to reserving. productId:{}", product.getId());
 	}
 
 
