@@ -22,10 +22,6 @@ spring:
       ddl-auto: update
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
-eureka:
-  client:
-    enabled: false
-
 logging:
   level:
     org.hibernate.orm.connections.pooling: DEBUG

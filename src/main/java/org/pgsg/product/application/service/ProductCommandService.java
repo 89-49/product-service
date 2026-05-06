@@ -44,7 +44,7 @@ public class ProductCommandService {
 
 		Product saved=productRepository.save(product);
 		//todo: 스케줄링 도구 적용 시 생성 후 스케줄이 등록되도록 고도화 예정
-		return new CreateProductResult(saved.getName(),saved.getPrice(),saved.getDescription());
+		return new CreateProductResult(saved.getId(),saved.getName(),saved.getPrice(),saved.getDescription());
 	}
 
 	public void deleteProduct(UUID id) {

@@ -1,19 +1,22 @@
 services:
   product-service:
-    image: ${DOCKER_REGISTRY}/product-service:${VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${DOCKER_REGISTRY:-docker.io/jin4041}/product-service:${VERSION:-latest}
     container_name: product-service
     ports:
       - "8082:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=dev,topics,kafka
-      - CONFIG_SERVER=http://${CONFIG_SERVER_HOST}:13100
-      - PRODUCT_DB_HOST=${PRODUCT_DB_HOST}
-      - PRODUCT_DB_PORT=${PRODUCT_DB_PORT:-5432}
-      - PRODUCT_DB_NAME=${PRODUCT_DB_NAME:-p_product}
-      - PRODUCT_DB_USERNAME=${PRODUCT_DB_USERNAME}
-      - PRODUCT_DB_PASSWORD=${PRODUCT_DB_PASSWORD}
-      - BOOTSTRAP_SERVERS=${BOOTSTRAP_SERVERS}
-      - TRUST_STORE_PASSWORD=${TRUST_STORE_PASSWORD}
+      - CONFIG_SERVER=http://${CONFIG_SERVER_HOST:-34.50.50.170}:13100
+      - host=${host:-product-db}
+      - port=${port:-5432}
+      - dbname=${dbname:-p_product}
+      - usernmae=${username:-pgsg}
+      - password=${password:-1234}
+      - BOOTSTRAP_SERVERS=${BOOTSTRAP_SERVERS:-34.64.35.152:9092,34.22.94.155:9092,34.50.28.59:9092}
+      - TRUST_STORE_PASSWORD=${TRUST_STORE_PASSWORD:-_aA123456}
     volumes:
       - ./ssl:/app/ssl
     depends_on:
@@ -26,11 +29,11 @@ services:
       - "5433:5432"
     environment:
       - POSTGRES_DB=${PRODUCT_DB_NAME:-p_product}
-      - POSTGRES_USER=${PRODUCT_DB_USERNAME}
-      - POSTGRES_PASSWORD=${PRODUCT_DB_PASSWORD}
+      - POSTGRES_USER=${PRODUCT_DB_USERNAME:-pgsg}
+      - POSTGRES_PASSWORD=${PRODUCT_DB_PASSWORD:-1234}
     volumes:
       - product-db-data:/var/lib/postgresql/data
-      - ./init/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./ssl:/app/ssl
 
 volumes:
   product-db-data:
