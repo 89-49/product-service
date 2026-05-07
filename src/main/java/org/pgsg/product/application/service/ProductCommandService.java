@@ -3,10 +3,13 @@ package org.pgsg.product.application.service;
 import static org.pgsg.product.global.exception.ProductErrorCode.*;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.pgsg.common.event.OutboxEvent;
 import org.pgsg.common.exception.CustomException;
+import org.pgsg.common.util.SecurityUtil;
+import org.pgsg.config.security.UserDetailsImpl;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
@@ -18,6 +21,7 @@ import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.domain.repository.ProductRepository;
 import org.pgsg.product.global.config.TopicConfig;
+import org.pgsg.product.global.exception.ProductErrorCode;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,15 +54,16 @@ public class ProductCommandService {
 
 	public void deleteProduct(UUID id) {
 		Product product=findById(id);
+		checkAuthorization(product.getCreatedBy());
 
-		UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
-			UUID.randomUUID();	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
+		UUID userId = SecurityUtil.getCurrentUserIdOrThrow();
 		product.deleteProduct(userId);
 		log.info("Deleted product. productId:{}, userId:{}", id, userId);
 	}
 
 	public UpdateProductResult updateProduct(UUID id, UpdateProductCommand command) {
 		Product product = findById(id);
+		checkAuthorization(product.getCreatedBy());
 
 		//todo: timeDealSchedule 설정부분 리팩토링 후 수정 예정
 		TimeDealSchedule newSchedule = command.endTime() == null ? null
@@ -81,6 +86,7 @@ public class ProductCommandService {
 	}
 	public UpdateProductResult setTimeDeal(UUID id, UpdateTimeDealCommand command) {
 		Product product = findById(id);
+		checkAuthorization(product.getCreatedBy());
 
 		product.setTimeDealSchedule(command.endTime());
 
@@ -129,8 +135,20 @@ public class ProductCommandService {
 	}
 
 
-	private Product findById(UUID id) {
-		return productRepository.findById(id)
+	private Product findById(UUID productId) {
+		return productRepository.findById(productId)
 			.orElseThrow(()->new CustomException(ProductNotFoundException));
+	}
+
+	private void checkAuthorization(UUID sellerId) {
+		String userRole=SecurityUtil.getCurrentUser()
+			.map(UserDetailsImpl::getUserRole)
+			.orElse(null);
+		if(userRole==null)
+			throw new CustomException(Forbidden);
+		else if(userRole.equals("USER")) {
+			if(!SecurityUtil.getCurrentUserIdOrThrow().equals(sellerId))
+				throw new CustomException(Unauthorized);
+		}
 	}
 }

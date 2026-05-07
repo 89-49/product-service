@@ -25,7 +25,6 @@ import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.model.ProductStatus;
 import org.pgsg.product.domain.repository.ProductRepository;
-import org.pgsg.product.global.config.security.UserContext;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Product 서비스 코드 테스트")
