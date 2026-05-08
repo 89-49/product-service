@@ -8,12 +8,13 @@ services:
     ports:
       - "8082:8082"
     environment:
+      - SPRING_KAFKA_SSL_TRUST_STORE_LOCATION=file:/app/ssl/kafka.server.truststore.jks
       - SPRING_PROFILES_ACTIVE=dev,topics,kafka
       - CONFIG_SERVER=http://${CONFIG_SERVER_HOST:-34.50.50.170}:13100
       - host=${host:-product-db}
       - port=${port:-5432}
-      - dbname=${dbname:-p_product}
-      - usernmae=${username:-pgsg}
+      - dbname=${dbname:-pgsg}
+      - username=${username:-pgsg}
       - password=${password:-1234}
       - BOOTSTRAP_SERVERS=${BOOTSTRAP_SERVERS:-34.64.35.152:9092,34.22.94.155:9092,34.50.28.59:9092}
       - TRUST_STORE_PASSWORD=${TRUST_STORE_PASSWORD:-_aA123456}
@@ -28,12 +29,20 @@ services:
     ports:
       - "5433:5432"
     environment:
-      - POSTGRES_DB=${PRODUCT_DB_NAME:-p_product}
+      - POSTGRES_DB=${PRODUCT_DB_NAME:-pgsg}
       - POSTGRES_USER=${PRODUCT_DB_USERNAME:-pgsg}
       - POSTGRES_PASSWORD=${PRODUCT_DB_PASSWORD:-1234}
     volumes:
       - product-db-data:/var/lib/postgresql/data
-      - ./ssl:/app/ssl
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U pgsg" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  default:
+    driver: bridge
 
 volumes:
   product-db-data:

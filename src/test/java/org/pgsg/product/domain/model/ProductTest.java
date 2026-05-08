@@ -2,27 +2,57 @@ package org.pgsg.product.domain.model;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.pgsg.common.exception.CustomException;
+import org.pgsg.common.util.SecurityUtil;
+import org.pgsg.config.security.UserDetailsImpl;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @DisplayName("Product 도메인 검증")
 class ProductTest {
 	private static final String VALID_PRODUCT_NAME = "Test Product";
 	private static final String VALID_PRODUCT_DESCRIPTION = "Test Product";
 	private static final Integer VALID_PRODUCT_PRICE = 100;
+	private MockedStatic<SecurityUtil> securityUtilMockedStatic;
 
-	Product validProduct;
+	private Product validProduct;
 
 	@BeforeEach
 	void setUp() {
 		validProduct = Product.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION);
 		validProduct.setTimeDealSchedule(LocalDateTime.now().plusHours(3));
+		ReflectionTestUtils.setField(validProduct, "status", ProductStatus.PENDING_RESERVATION);
+
+		securityUtilMockedStatic = mockStatic(SecurityUtil.class);
+
+		securityUtilMockedStatic.when(SecurityUtil::getCurrentUser)
+			.thenReturn(Optional.of(UserDetailsImpl.builder()
+				.uuid(UUID.randomUUID())
+				.username("testuser")
+				.password("")
+				.userRole("ROLE_MANAGER")
+				.name("test")
+				.nickname("test")
+				.enabled(true)
+				.build()));
+	}
+
+	@AfterEach
+	void tearDown() {
+		if (securityUtilMockedStatic != null) {
+			securityUtilMockedStatic.close();
+			securityUtilMockedStatic = null;
+		}
 	}
 
 	@Test
