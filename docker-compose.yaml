@@ -21,7 +21,12 @@ services:
     volumes:
       - ./ssl:/app/ssl
     depends_on:
-      - product-db
+      product-db:
+          condition: service_healthy
+    networks:
+      - pgsg-network
+      - default
+
 
   product-db:
     image: postgres:16
@@ -39,8 +44,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
 networks:
+  pgsg-network:
+    external: true
   default:
     driver: bridge
 
