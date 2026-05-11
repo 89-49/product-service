@@ -14,38 +14,40 @@ services:
       - host=${host:-product-db}
       - port=${port:-5432}
       - dbname=${dbname:-pgsg}
-      - username=${username:-pgsg}
-      - password=${password:-1234}
-      - BOOTSTRAP_SERVERS=${BOOTSTRAP_SERVERS:-34.64.35.152:9092,34.22.94.155:9092,34.50.28.59:9092}
-      - TRUST_STORE_PASSWORD=${TRUST_STORE_PASSWORD:-_aA123456}
+      - username=${username}
+      - password=${password}
+      - BOOTSTRAP_SERVERS=${BOOTSTRAP_SERVERS}
+      - TRUST_STORE_PASSWORD=${TRUST_STORE_PASSWORD}
+      - ZIPKIN_ENDPOINT=http://pgsg-zipkin:9411/api/v2/spans
     volumes:
       - ./ssl:/app/ssl
-    depends_on:
-      product-db:
-          condition: service_healthy
+      - product-logs:/app/logs
+#    depends_on:
+#      product-db:
+#          condition: service_healthy
     networks:
       - pgsg-network
       - default
 
 
-  product-db:
-    image: postgres:16
-    container_name: product-db
-    ports:
-      - "5433:5432"
-    environment:
-      - POSTGRES_DB=${PRODUCT_DB_NAME:-pgsg}
-      - POSTGRES_USER=${PRODUCT_DB_USERNAME:-pgsg}
-      - POSTGRES_PASSWORD=${PRODUCT_DB_PASSWORD:-1234}
-    volumes:
-      - product-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U pgsg" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - default
+#  product-db:
+#    image: postgres:16
+#    container_name: product-db
+#    ports:
+#      - "5433:5432"
+#    environment:
+#      - POSTGRES_DB=${PRODUCT_DB_NAME:-pgsg}
+#      - POSTGRES_USER=${PRODUCT_DB_USERNAME:-pgsg}
+#      - POSTGRES_PASSWORD=${PRODUCT_DB_PASSWORD:-1234}
+#    volumes:
+#      - product-db-data:/var/lib/postgresql/data
+#    healthcheck:
+#      test: [ "CMD-SHELL", "pg_isready -U ${PRODUCT_DB_USERNAME:-pgsg}" ]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - default
 
 networks:
   pgsg-network:
@@ -54,4 +56,5 @@ networks:
     driver: bridge
 
 volumes:
-  product-db-data:
+#  product-db-data:
+  product-logs:
