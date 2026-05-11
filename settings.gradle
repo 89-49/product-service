@@ -1,3 +1,3 @@
 rootProject.name = 'product'
 
-includeBuild('../common')
+//includeBuild('../common')
