@@ -1,5 +1,21 @@
-#spring:
-#  kafka:
-#    ssl:
-#      trust-store-location: file:/app/ssl/kafka.server.truststore.jks
-#      trust-store-password: ${TRUST_STORE_PASSWORD}
+spring:
+  main:
+    log-startup-info: false
+  output:
+    ansi:
+      enabled: never
+logging:
+  config: classpath:logback-spring.xml
+  register-shutdown-hook: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,refresh,env
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}

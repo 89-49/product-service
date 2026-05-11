@@ -11,6 +11,7 @@ import org.pgsg.common.messaging.annotation.IdempotentConsumer;
 import org.pgsg.common.util.JsonUtil;
 import org.pgsg.product.application.service.ProductCommandService;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -38,7 +39,7 @@ public class ProductKafkaConsumer {
 	//예약 성공 -> 거래 중으로 상태 변경
 	@IdempotentConsumer("product:reservation-complete")
 	@KafkaListener(topics = "${topics.reservation.completed}",groupId = "product-group")
-	public void handleReservationComplete(ConsumerRecord<String, String>record) {
+	public void handleReservationComplete(ConsumerRecord<String, String>record, Acknowledgment ack) {
 		UUID productId = extractProductId(record.value());
 		if (productId == null) return;
 		try {
@@ -51,7 +52,7 @@ public class ProductKafkaConsumer {
 	//거래 완료
 	@IdempotentConsumer("product:trade-completed")
 	@KafkaListener(topics = "${topics.trade.completed}", groupId = "product-group")
-	public void handleTradeCompleted(ConsumerRecord<String, String>record) {
+	public void handleTradeCompleted(ConsumerRecord<String, String>record, Acknowledgment ack) {
 		UUID productId = extractProductId(record.value());
 		if (productId == null) return;
 		try {
