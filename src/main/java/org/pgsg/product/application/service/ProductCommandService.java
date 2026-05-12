@@ -3,21 +3,31 @@ package org.pgsg.product.application.service;
 import static org.pgsg.product.global.exception.ProductErrorCode.*;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
+import org.pgsg.common.event.OutboxEvent;
 import org.pgsg.common.exception.CustomException;
+import org.pgsg.common.util.SecurityUtil;
+import org.pgsg.config.security.UserDetailsImpl;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
 import org.pgsg.product.application.dto.result.CreateProductResult;
 import org.pgsg.product.application.dto.result.UpdateProductResult;
-import org.pgsg.product.domain.model.TimeDealSchedule;
+import org.pgsg.product.application.mapper.ProductApplicationMapper;
+import org.pgsg.product.domain.event.ProductCreatedEvent;
 import org.pgsg.product.domain.model.Product;
+import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.domain.repository.ProductRepository;
+import org.pgsg.product.global.config.TopicConfig;
+import org.pgsg.product.global.exception.ProductErrorCode;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /*
 * 상품 추가, 삭제, 수정 조회, 이벤트 연결
@@ -25,28 +35,35 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ProductCommandService {
 	private final ProductRepository productRepository;
+	private final ProductApplicationMapper mapper;
+	private final TopicConfig topicConfig;
+	private final ApplicationEventPublisher eventPublisher;
 
 	public CreateProductResult createProduct(CreateProductCommand command) {
 		Product product =Product.create(
 			command.name(),command.price(),command.description());	//todo: 스케줄 입력 시기 변경 후 수정 필요
 
 		Product saved=productRepository.save(product);
-
-		return new CreateProductResult(saved.getName(),saved.getPrice(),saved.getDescription());
+		log.info("Created product: productId:{}, userId:{}", saved.getId(),saved.getCreatedBy());
+		//todo: 스케줄링 도구 적용 시 생성 후 스케줄이 등록되도록 고도화 예정
+		return new CreateProductResult(saved.getId(),saved.getName(),saved.getPrice(),saved.getDescription());
 	}
 
 	public void deleteProduct(UUID id) {
 		Product product=findById(id);
+		checkAuthorization(product.getCreatedBy());
 
-		UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
-			UUID.randomUUID();	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
+		UUID userId = SecurityUtil.getCurrentUserIdOrThrow();
 		product.deleteProduct(userId);
+		log.info("Deleted product. productId:{}, userId:{}", id, userId);
 	}
 
 	public UpdateProductResult updateProduct(UUID id, UpdateProductCommand command) {
 		Product product = findById(id);
+		checkAuthorization(product.getCreatedBy());
 
 		//todo: timeDealSchedule 설정부분 리팩토링 후 수정 예정
 		TimeDealSchedule newSchedule = command.endTime() == null ? null
@@ -56,6 +73,7 @@ public class ProductCommandService {
 		product.update(command.name(), command.price(), command.description(), newSchedule);
 
 		Product saved = productRepository.saveAndFlush(product);
+		log.info("Updated product: productId:{}, userId:{}", saved.getId(), saved.getModifiedBy());
 
 		TimeDealSchedule schedule = saved.getTimeDealSchedule();
 		return new UpdateProductResult(
@@ -68,29 +86,69 @@ public class ProductCommandService {
 	}
 	public UpdateProductResult setTimeDeal(UUID id, UpdateTimeDealCommand command) {
 		Product product = findById(id);
+		checkAuthorization(product.getCreatedBy());
 
 		product.setTimeDealSchedule(command.endTime());
 
 		Product saved=productRepository.saveAndFlush(product);
+		log.info("Set Timedeal: productId:{}, userId:{}", saved.getId(), saved.getModifiedBy());
 
-		//todo: 타임딜 설정 후 이벤트 발행 부분 추가 예정 - mvp 이후 이벤트 발행 위치 변경 예정
+		//todo: mvp 이후 이벤트 발행 위치 변경 예정
+		ProductCreatedEvent payload = mapper.toCreatedEvent(product);
+		String eventType=topicConfig.getProduct().getCreated();
+		OutboxEvent event=new OutboxEvent(saved.getId(),  saved.getId(),"Product", eventType, payload);
+
+		eventPublisher.publishEvent(event);
+		log.info("event is published. productId:{}, eventType:{}", saved.getId(), eventType);
+
 
 		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
 			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());
 	}
 
-	public void cancelSaleProduct(UUID id) {
+	public void cancelSale(UUID id) {
 		Product product = findById(id);
 		product.cancelSale();
+		log.info("Sale is cancelled. productId:{}", product.getId());
 
 		// UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
 		// 	UUID.fromString("00000000-0000-0000-0000-000000000000");	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
 		// product.deleteProduct(id);	//todo: 삭제와 판매 취소를 동일하게 할지 좀 더 고려
 	}
 
+	public void completeTrade(UUID id) {
+		Product product = findById(id);
+		product.complete();
+		log.info("Trade is completed. productId:{}", product.getId());
+	}
 
-	private Product findById(UUID id) {
-		return productRepository.findById(id)
+	public void completeReservation(UUID id) {
+		Product product = findById(id);
+		product.startTrade();
+		log.info("Reservation is completed. productId:{}", product.getId());
+	}
+
+	public void pendingSale(UUID id) {
+		Product product = findById(id);
+		product.revertToReserving();
+		log.info("This product revert to reserving. productId:{}", product.getId());
+	}
+
+
+	private Product findById(UUID productId) {
+		return productRepository.findById(productId)
 			.orElseThrow(()->new CustomException(ProductNotFoundException));
+	}
+
+	private void checkAuthorization(UUID sellerId) {
+		String userRole=SecurityUtil.getCurrentUser()
+			.map(UserDetailsImpl::getUserRole)
+			.orElse(null);
+		if(userRole==null)
+			throw new CustomException(Forbidden);
+		else if(userRole.equals("USER")) {
+			if(!SecurityUtil.getCurrentUserIdOrThrow().equals(sellerId))
+				throw new CustomException(Unauthorized);
+		}
 	}
 }

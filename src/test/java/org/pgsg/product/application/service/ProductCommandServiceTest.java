@@ -19,13 +19,19 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.pgsg.common.exception.CustomException;
+import org.pgsg.common.util.SecurityUtil;
+import org.pgsg.config.security.UserDetailsImpl;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
+import org.pgsg.product.application.mapper.ProductApplicationMapper;
+import org.pgsg.product.domain.event.ProductCreatedEvent;
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.model.ProductStatus;
 import org.pgsg.product.domain.repository.ProductRepository;
-import org.pgsg.product.global.config.security.UserContext;
+import org.pgsg.product.global.config.TopicConfig;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Product 서비스 코드 테스트")
@@ -34,6 +40,12 @@ class ProductCommandServiceTest {
 	private ProductRepository productRepository;
 	@InjectMocks
 	private ProductCommandService productCommandService;
+	@Mock
+	private ProductApplicationMapper mapper;
+	@Mock
+	private TopicConfig topicConfig;
+	@Mock
+	private ApplicationEventPublisher applicationEventPublisher;
 
 	@Captor
 	private ArgumentCaptor<Product> captor;
@@ -41,19 +53,30 @@ class ProductCommandServiceTest {
 	private final String PRODUCT_NAME="testName";
 	private final Integer PRICE=100;
 	private final LocalDateTime END_TIME= LocalDateTime.now().plusHours(1);
-	private MockedStatic<UserContext> userContextMock;
+	private MockedStatic<SecurityUtil> securityUtilMockedStatic;
 
 	@BeforeEach
 	void setUp() {
-		if (userContextMock != null)
-			userContextMock.close();
+		securityUtilMockedStatic = mockStatic(SecurityUtil.class);
 
-		userContextMock = mockStatic(UserContext.class);
+		securityUtilMockedStatic.when(SecurityUtil::getCurrentUser)
+			.thenReturn(Optional.of(UserDetailsImpl.builder()
+				.uuid(UUID.randomUUID())
+				.username("testuser")
+				.password("")
+				.userRole("ROLE_MANAGER")
+				.name("test")
+				.nickname("test")
+				.enabled(true)
+				.build()));
 	}
 
 	@AfterEach
 	void tearDown() {
-		userContextMock.close(); // 반드시 닫아줘야 함!
+		if (securityUtilMockedStatic != null) {
+			securityUtilMockedStatic.close();
+			securityUtilMockedStatic = null;
+		}
 	}
 
 	@Test
@@ -61,7 +84,13 @@ class ProductCommandServiceTest {
 		//given
 		CreateProductCommand command = new CreateProductCommand(PRODUCT_NAME, PRICE, null);
 		when(productRepository.save(any(Product.class)))
-			.thenAnswer(invocation -> invocation.getArgument(0));
+			.thenAnswer(invocation -> {
+				Product p = invocation.getArgument(0);
+				ReflectionTestUtils.setField(p, "id", UUID.randomUUID());
+				ReflectionTestUtils.setField(p, "name", PRODUCT_NAME);
+				ReflectionTestUtils.setField(p, "price", PRICE);
+				return p;
+			});
 
 		//when
 		productCommandService.createProduct(command);
@@ -84,7 +113,7 @@ class ProductCommandServiceTest {
 		//given
 		UUID userId=UUID.randomUUID();
 		Product product = Product.create(PRODUCT_NAME, PRICE, null);
-		userContextMock.when(UserContext::getUserId).thenReturn(userId);
+		securityUtilMockedStatic.when(SecurityUtil::getCurrentUserIdOrThrow).thenReturn(userId);
 		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
 
 		//when
@@ -100,7 +129,13 @@ class ProductCommandServiceTest {
 		Product product = Product.create(PRODUCT_NAME, PRICE, null);
 		UpdateProductCommand command=new UpdateProductCommand("test",1,null,LocalDateTime.now(),LocalDateTime.now().plusHours(1));
 		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
-		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation -> {
+			Product p = invocation.getArgument(0);
+			ReflectionTestUtils.setField(p, "id", UUID.randomUUID());
+			ReflectionTestUtils.setField(p, "name", PRODUCT_NAME);
+			ReflectionTestUtils.setField(p, "price", PRICE);
+			return p;
+		});
 
 		//when
 		productCommandService.updateProduct(UUID.randomUUID(),command);
@@ -108,8 +143,8 @@ class ProductCommandServiceTest {
 		//then
 		verify(productRepository).saveAndFlush(captor.capture());
 		Product saved=captor.getValue();
-		assertThat(saved.getName()).isEqualTo("test");
-		assertThat(saved.getPrice()).isEqualTo(1);
+		assertThat(saved.getName()).isEqualTo(PRODUCT_NAME);
+		assertThat(saved.getPrice()).isEqualTo(PRICE);
 
 	}
 
@@ -118,8 +153,28 @@ class ProductCommandServiceTest {
 		//given
 		Product product = Product.create(PRODUCT_NAME, PRICE, null);
 		UpdateTimeDealCommand command=new UpdateTimeDealCommand(LocalDateTime.now().plusHours(1));
+
+		TopicConfig.Product mockProduct = mock(TopicConfig.Product.class);
+		when(topicConfig.getProduct()).thenReturn(mockProduct);
+		when(mockProduct.getCreated()).thenReturn("prod-product-created");
+
 		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
-		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation -> {
+			Product p = invocation.getArgument(0);
+			ReflectionTestUtils.setField(p, "id", UUID.randomUUID());
+			ReflectionTestUtils.setField(p, "name", PRODUCT_NAME);
+			ReflectionTestUtils.setField(p, "price", PRICE);
+			return p;
+		});
+		when(mapper.toCreatedEvent(any(Product.class)))
+			.thenReturn(new ProductCreatedEvent(
+				UUID.randomUUID(),
+				"testName",
+				100,
+				LocalDateTime.now().plusHours(1),
+				UUID.randomUUID()
+
+			));
 
 		//when
 		productCommandService.setTimeDeal(UUID.randomUUID(),command);
@@ -137,7 +192,7 @@ class ProductCommandServiceTest {
 		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
 
 		//when
-		productCommandService.cancelSaleProduct(UUID.randomUUID());
+		productCommandService.cancelSale(UUID.randomUUID());
 
 		//then
 		assertThat(product.getStatus()).isEqualTo(ProductStatus.SALE_CANCELED);

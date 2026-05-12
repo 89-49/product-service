@@ -1,8 +1,9 @@
 package org.pgsg.product.global.exception;
 
+import org.pgsg.common.exception.ErrorCode;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.pgsg.common.exception.ErrorCode;
 
 @Getter
 @RequiredArgsConstructor
@@ -19,7 +20,9 @@ public enum ProductErrorCode implements ErrorCode{
 	InvalidTimeDealDurationException("product.validation.business.set-timedeal"),
 
 	//기타
-	ProductNotFoundException("product.resource.not-found.product");
+	ProductNotFoundException("product.resource.not-found.product"),
+	Forbidden("product.validation.user.forbidden"),
+	Unauthorized("product.validation.user.unauthorized");
 
 
 	private final String errorKey;

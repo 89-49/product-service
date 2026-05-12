@@ -1,7 +1,5 @@
-spring:
-  application:
-    name: product-service
-
-  config:
-    import:
-      - optional:configserver:${CONFIGSERVER}
+#spring:
+#  kafka:
+#    ssl:
+#      trust-store-location: file:/app/ssl/kafka.server.truststore.jks
+#      trust-store-password: ${TRUST_STORE_PASSWORD}

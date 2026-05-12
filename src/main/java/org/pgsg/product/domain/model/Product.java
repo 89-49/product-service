@@ -72,13 +72,14 @@ public class Product extends BaseEntity {
 			throw new CustomException(PriceValidateException,"price");
 	}
 
-	//요청 시간 기준으로 타임딜 시간 설정
+	//요청 시간 기준으로 타임딜 시간 설정	//todo: 타임딜 스케줄러 도입 후 startReserve 분리 예정
 	public void setTimeDealSchedule(LocalDateTime end) {
 		LocalDateTime now = LocalDateTime.now();
 		validateTimeDealSchedule(now,end);
 
 		this.timeDealSchedule=TimeDealSchedule.of(now,end);
 		this.status=ProductStatus.PENDING_RESERVATION;
+		startReserve();
 	}
 
 	//상태 변경	//todo: 다른 도메인과의 협업 시 status 변경 로직 분리 고려

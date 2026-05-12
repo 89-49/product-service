@@ -2,11 +2,16 @@ package org.pgsg.product.application.dto.result;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.UUID;
+
+import org.pgsg.product.domain.model.ProductStatus;
 
 public record FindProductResult(
 	String name,
 	Integer price,
 	String description,
+	UUID sellerId,
+	ProductStatus status,
 	LocalDateTime startTime,
 	LocalDateTime endTime
 ) {

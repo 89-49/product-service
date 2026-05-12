@@ -2,9 +2,16 @@ package org.pgsg.product;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "org.pgsg"
+,exclude = {
+	SecurityAutoConfiguration.class,
+	UserDetailsServiceAutoConfiguration.class
+})
+@EntityScan(basePackages = "org.pgsg")
 public class ProductApplication {
 
 	public static void main(String[] args) {
