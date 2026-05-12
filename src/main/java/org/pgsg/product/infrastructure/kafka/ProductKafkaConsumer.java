@@ -40,18 +40,18 @@ public class ProductKafkaConsumer {
 	@IdempotentConsumer("product:reservation-complete")
 	@KafkaListener(topics = "${topics.reservation.completed}",groupId = "product-group")
 	public void handleReservationComplete(ConsumerRecord<String, String>record, Acknowledgment ack) {
-		UUID productId = extractProductId(record.value());
-		if (productId == null) return;
 		try {
+			UUID productId = extractProductId(record.value());
 			productCommandService.completeReservation(productId);
 		} catch (IllegalArgumentException e) {
 			log.error("메시지 처리 불가 - 스킵 처리: {}", e.getMessage(), e);
 			ack.acknowledge();
 		} catch (CustomException e) {
-			log.error("도메인 예외 발생 - 스킵 처리: productId={}, error={}", productId, e);
-		} catch (Exception e) {
-			log.error("예상치 못한 예외 발생 - 스킵 처리: record={}, error={}", record.value(), e.getMessage(), e);
+			log.error("도메인 예외 발생 - 스킵 처리:  error={}", e.getMessage(), e);
 			ack.acknowledge();
+		} catch (Exception e) {
+			log.error("예상치 못한 예외 발생 - DLT 라우팅: record={}, error={}", record.value(), e.getMessage(), e);
+			throw e;
 		}
 	}
 
@@ -59,15 +59,15 @@ public class ProductKafkaConsumer {
 	@IdempotentConsumer("product:trade-completed")
 	@KafkaListener(topics = "${topics.trade.completed}", groupId = "product-group")
 	public void handleTradeCompleted(ConsumerRecord<String, String>record, Acknowledgment ack) {
-		UUID productId = extractProductId(record.value());
-		if (productId == null) return;
 		try {
+			UUID productId = extractProductId(record.value());
 			productCommandService.completeTrade(productId);
 		} catch (CustomException e) {
-			log.error("도메인 예외 발생 - 스킵 처리: productId={}, error={}", productId, e);
-		} catch (Exception e) {
-			log.error("예상치 못한 예외 발생 - 스킵 처리: record={}, error={}", record.value(), e.getMessage(), e);
+			log.error("도메인 예외 발생 - 스킵 처리: error={}", e.getMessage(), e);
 			ack.acknowledge();
+		} catch (Exception e) {
+			log.error("예상치 못한 예외 발생 - DLT 라우팅: record={}, error={}", record.value(), e.getMessage(), e);
+			throw e;
 		}
 
 	}
