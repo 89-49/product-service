@@ -24,17 +24,26 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ProductKafkaConsumer {
 	private final ProductCommandService productCommandService;
-	//todo: 실제 이벤트 확인 후 Productevent 수정 예정
 
-	// //예약 취소 -> 판매 대기 중으로 변경 후 타임딜 등 재설정 대기	//todo: 예약 취소 구현 후 수정, yml 파일 읽는 방식은 현재 해당 파일 인식을 못하고 있어서 추후 다시 시도예정
-	// @KafkaListener(topics = "#{topicConfig.reservation.cancelled}",groupId = "product-group")
-	// @IdempotentConsumer("product:reservation-cancelled")
-	// public void handleReservationCancelled(ConsumerRecord<String, OutboxEvent>record) {
-	// 	OutboxEvent event=record.value();
-	// 	UUID productId=event.correlationId();
-	//
-	// 	productCommandService.pendingSale(productId);
-	// }
+	//예약 취소 -> 판매 대기 중으로 변경 후 타임딜 등 재설정 대기	//todo: topics 파일에 추가되면 변경
+	@KafkaListener(topics = "prod-reservation-buyercancelled",groupId = "product-group")
+	@IdempotentConsumer("product:reservation-cancelled")
+	public void handleReservationCancelled(ConsumerRecord<String, String>record, Acknowledgment ack) {
+		try {
+			UUID productId = extractProductId(record.value());
+			productCommandService.pendingSale(productId);
+		} catch (IllegalArgumentException e) {
+			log.error("메시지 처리 불가 - 스킵 처리: {}", e.getMessage(), e);
+			ack.acknowledge();
+		} catch (CustomException e) {
+			log.error("도메인 예외 발생 - 스킵 처리:  error={}", e.getMessage(), e);
+			ack.acknowledge();
+		} catch (Exception e) {
+			log.error("예상치 못한 예외 발생 - DLT 라우팅: record={}, error={}", record.value(), e.getMessage(), e);
+			throw e;
+		}
+
+	}
 
 	//예약 성공 -> 거래 중으로 상태 변경
 	@IdempotentConsumer("product:reservation-complete")
