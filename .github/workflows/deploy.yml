@@ -23,6 +23,9 @@ jobs:
           distribution: 'temurin'
 
       - name: Gradle 빌드
+        env:
+          GPR_USER: ${{ secrets.GPR_USER }}
+          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
         run: ./gradlew clean build -x test
 
       - name: Docker Hub 로그인
