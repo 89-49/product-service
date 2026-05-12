@@ -36,6 +36,7 @@ public class TopicConfig {	//todo: 현재 필요한 부분만 우선 선언, 작
 	public static class Reservation {
 		@NotBlank
 		private String completed;
-		// private String cancelled;	//todo: 예약 취소 구현 후 수정
+		@NotBlank
+		private String buyercancelled;
 	}
 }
