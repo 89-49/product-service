@@ -4,24 +4,15 @@ spring:
 
   cloud:
     config:
-      uri: ${CONFIG-SERVER:http://34.50.50.170:13100}
+      uri: ${CONFIG-SERVER}
       name: product-service,common
-
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
-
+      override-none: true
 
   config:
     import:
-      - optional:configserver:${CONFIG-SERVER:http://34.50.50.170:13100}
+      - optional:configserver:${CONFIG-SERVER}
 #      설정 서버 유레카 등록 시 변경
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 logging:
   level:
@@ -32,3 +23,4 @@ eureka:
   client:
     refresh:
       enable: false
+      #      설정 서버 유레카 등록 시 변경

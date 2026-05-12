@@ -1,5 +1,9 @@
-#spring:
-#  kafka:
-#    ssl:
-#      trust-store-location: file:/app/ssl/kafka.server.truststore.jks
-#      trust-store-password: ${TRUST_STORE_PASSWORD}
+spring:
+  main:
+    log-startup-info: false
+  output:
+    ansi:
+      enabled: never
+logging:
+  config: classpath:logback-spring.xml
+  register-shutdown-hook: false
