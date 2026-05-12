@@ -36,28 +36,28 @@ public class ProductKafkaConsumer {
 	// }
 
 	//예약 성공 -> 거래 중으로 상태 변경
-	@KafkaListener(topics = "#{topicConfig.reservation.completed}",groupId = "product-group")
 	@IdempotentConsumer("product:reservation-complete")
+	@KafkaListener(topics = "${topics.reservation.completed}",groupId = "product-group")
 	public void handleReservationComplete(ConsumerRecord<String, String>record) {
 		UUID productId = extractProductId(record.value());
 		if (productId == null) return;
 		try {
 			productCommandService.completeReservation(productId);
 		} catch (CustomException e) {
-			log.error("도메인 예외 발생 - 스킵 처리: productId={}, error={}", productId, e.getMessage());
+			log.error("도메인 예외 발생 - 스킵 처리: productId={}, error={}", productId, e);
 		}
 	}
 
 	//거래 완료
-	@KafkaListener(topics = "#{topicConfig.trade.completed}", groupId = "product-group")
 	@IdempotentConsumer("product:trade-completed")
+	@KafkaListener(topics = "${topics.trade.completed}", groupId = "product-group")
 	public void handleTradeCompleted(ConsumerRecord<String, String>record) {
 		UUID productId = extractProductId(record.value());
 		if (productId == null) return;
 		try {
 			productCommandService.completeTrade(productId);
 		} catch (CustomException e) {
-			log.error("도메인 예외 발생 - 스킵 처리: productId={}, error={}", productId, e.getMessage());
+			log.error("도메인 예외 발생 - 스킵 처리: productId={}, error={}", productId, e);
 		}
 
 	}
@@ -67,16 +67,16 @@ public class ProductKafkaConsumer {
 		try {
 			Map<String, Object> map = JsonUtil.fromJson(value, new TypeReference<>() {
 			});
-			if (map == null || !map.containsKey("correlationId")) {
-				log.error("correlationId 누락: {}", value);
+			if (map == null || !map.containsKey("productId")) {	//todo: correlationId->productId 나중에 검토
+				log.error("productId 누락");
 				return null;
 			}
-			return UUID.fromString((String) map.get("correlationId"));
+			return UUID.fromString((String) map.get("productId"));
 		} catch (IllegalArgumentException e) {
-			log.error("유효하지 않은 UUID 형식: {}", value, e);
+			log.error("유효하지 않은 UUID 형식: {}", e);
 			return null;
 		} catch (Exception e) {
-			log.error("메시지 파싱 실패: {}", value, e);
+			log.error("메시지 파싱 실패: {}", e);
 			return null;
 		}
 	}
