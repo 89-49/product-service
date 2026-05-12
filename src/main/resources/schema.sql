@@ -43,4 +43,4 @@ CREATE TABLE IF NOT EXISTS p_inbox (
 );
 
 CREATE INDEX IF NOT EXISTS idx_inbox_message_group ON p_inbox (message_group);
-CREATE INDEX IF NOT EXISTS idx_inbox_processed_at ON p_inbox (received_at);
+CREATE INDEX IF NOT EXISTS idx_inbox_received_at ON p_inbox (received_at);

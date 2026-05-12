@@ -4,13 +4,13 @@ spring:
 
   cloud:
     config:
-      uri: ${CONFIG-SERVER:http://34.50.50.170:13100}
+      uri: ${CONFIG-SERVER}
       name: product-service,common
       override-none: true
 
   config:
     import:
-      - optional:configserver:${CONFIG-SERVER:http://34.50.50.170:13100}
+      - optional:configserver:${CONFIG-SERVER}
 #      설정 서버 유레카 등록 시 변경
 
 
