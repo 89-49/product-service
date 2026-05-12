@@ -13,6 +13,9 @@ jobs:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
 
+      - name: gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
       - name: JDK 21 설치
         uses: actions/setup-java@v4
         with:
@@ -43,7 +46,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
-            cd /home/ubuntu/product
+            cd /home/yjj1544/product
             docker compose pull
             docker compose up -d
             docker image prune -f
