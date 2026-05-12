@@ -49,7 +49,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
-            cd /home/yjj1544/product
+            cd ~/app/product-service
             docker compose pull
             docker compose up -d
             docker image prune -f
