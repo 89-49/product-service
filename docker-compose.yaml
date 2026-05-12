@@ -10,7 +10,7 @@ services:
     environment:
       - SPRING_KAFKA_SSL_TRUST_STORE_LOCATION=file:/app/ssl/kafka.server.truststore.jks
       - SPRING_PROFILES_ACTIVE=topics,kafka
-      - CONFIG_SERVER=http://${CONFIG_SERVER_HOST:-34.50.50.170}:13100
+      - CONFIG_SERVER=http://${CONFIG_SERVER_HOST}:13100
       - host=${host:-pgsg}
       - port=${port:-5432}
       - dbname=${dbname:-pgsg}
@@ -21,39 +21,36 @@ services:
       - ZIPKIN_ENDPOINT=http://pgsg-zipkin:9411/api/v2/spans
     volumes:
       - ./ssl:/app/ssl
-      - /home/ubuntu/product/logs:/app/logs
-    depends_on:
-      product-db:
-          condition: service_healthy
+      - ${LOG_DIR:-./logs}:/app/logs
+#    depends_on:
+#      product-db:
+#          condition: service_healthy
     networks:
       - pgsg-network
-      - default
 
 
-  product-db:
-    image: postgres:16
-    container_name: product-db
-    ports:
-      - "5433:5432"
-    environment:
-      - POSTGRES_DB=${dbname:-pgsg}
-      - POSTGRES_USER=${username}
-      - POSTGRES_PASSWORD=${password}
-    volumes:
-      - product-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${PRODUCT_DB_USERNAME:-pgsg}" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - default
+#  product-db:
+#    image: postgres:16
+#    container_name: product-db
+#    ports:
+#      - "5433:5432"
+#    environment:
+#      - POSTGRES_DB=${dbname:-pgsg}
+#      - POSTGRES_USER=${username}
+#      - POSTGRES_PASSWORD=${password}
+#    volumes:
+#      - product-db-data:/var/lib/postgresql/data
+#    healthcheck:
+#      test: [ "CMD-SHELL", "pg_isready -U ${username:-pgsg}" ]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 5
+#    networks:
+#      - default
 
 networks:
   pgsg-network:
     external: true
-  default:
-    driver: bridge
 
-volumes:
-  product-db-data:
+#volumes:
+#  product-db-data:
