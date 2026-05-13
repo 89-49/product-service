@@ -19,7 +19,7 @@ services:
       - password=${password}
       - BOOTSTRAP_SERVERS=${BOOTSTRAP_SERVERS}
       - TRUST_STORE_PASSWORD=${TRUST_STORE_PASSWORD}
-      - ZIPKIN_ENDPOINT=http://pgsg-zipkin:9411/api/v2/spans
+      - ZIPKIN_ENDPOINT=http://${ZIPKIN_HOST}:9411/api/v2/spans
       - HOSTNAME=${VM_IP}
     volumes:
       - ./ssl:/app/ssl
