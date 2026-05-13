@@ -4,13 +4,13 @@ spring:
 
   cloud:
     config:
-      uri: http://${CONFIG_SERVER_HOST}:13100
+      uri: ${CONFIG_SERVER}
       name: product-service,common
       override-none: true
 
   config:
     import:
-      - optional:configserver:http://${CONFIG_SERVER_HOST}:13100
+      - optional:configserver:${CONFIG_SERVER}
 
 logging:
   level:
