@@ -26,7 +26,7 @@ public class ProductKafkaConsumer {
 	private final ProductCommandService productCommandService;
 
 	//예약 취소 -> 판매 대기 중으로 변경 후 타임딜 등 재설정 대기	//todo: topics 파일에 추가되면 변경
-	@KafkaListener(topics = "${topics.reservation.buyercancelled}",groupId = "product-group")
+	@KafkaListener(topics = "${topics.reservation.cancelled}",groupId = "product-group")
 	@IdempotentConsumer("product:reservation-cancelled")
 	public void handleReservationCancelled(ConsumerRecord<String, String>record, Acknowledgment ack) {
 		try {

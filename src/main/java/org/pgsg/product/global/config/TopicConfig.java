@@ -37,6 +37,6 @@ public class TopicConfig {	//todo: 현재 필요한 부분만 우선 선언, 작
 		@NotBlank
 		private String completed;
 		@NotBlank
-		private String buyercancelled;
+		private String cancelled;
 	}
 }
