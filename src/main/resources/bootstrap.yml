@@ -4,23 +4,15 @@ spring:
 
   cloud:
     config:
-      uri: ${CONFIG-SERVER}
+      uri: http://${CONFIG_SERVER_HOST}:13100
       name: product-service,common
       override-none: true
 
   config:
     import:
-      - optional:configserver:${CONFIG-SERVER}
-#      설정 서버 유레카 등록 시 변경
-
+      - optional:configserver:http://${CONFIG_SERVER_HOST}:13100
 
 logging:
   level:
     org.hibernate.orm.connections.pooling: WARN
     org.hibernate.SQL: WARN
-
-eureka:
-  client:
-    refresh:
-      enable: false
-      #      설정 서버 유레카 등록 시 변경
