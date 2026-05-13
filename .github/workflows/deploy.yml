@@ -49,6 +49,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
+            mkdir -p ~/app/product-service/ssl
+            echo "${{ secrets.SSL_TRUSTSTORE }}" | base64 -d > ~/app/product-service/ssl/kafka.server.truststore.jks 
             cd ~/app/product-service
             git pull origin main
             docker compose pull
