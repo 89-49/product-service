@@ -22,6 +22,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: SSL 인증서 파일 생성
+        run: |
+          mkdir -p ssl
+          echo "${{ secrets.SSL_TRUSTSTORE }}" | base64 -d > ssl/kafka.server.truststore.jks
+
       - name: Gradle 빌드
         env:
           GPR_USER: ${{ secrets.GPR_USER }}
@@ -49,8 +54,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
-            mkdir -p ~/app/product-service/ssl
-            echo "${{ secrets.SSL_TRUSTSTORE }}" | base64 -d > ~/app/product-service/ssl/kafka.server.truststore.jks 
             cd ~/app/product-service
             git pull origin main
             docker compose pull
