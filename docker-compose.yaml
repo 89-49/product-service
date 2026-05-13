@@ -9,6 +9,7 @@ services:
       - "8082:8082"
     environment:
       - SPRING_KAFKA_SSL_TRUST_STORE_LOCATION=file:/app/ssl/kafka.server.truststore.jks
+      - JAVA_TOOL_OPTIONS=-Dspring.kafka.ssl.trust-store-location=file:/app/ssl/kafka.server.truststore.jks
       - SPRING_PROFILES_ACTIVE=topics,kafka
       - CONFIG_SERVER=http://${CONFIG_SERVER_HOST}:13100
       - host=${host:-pgsg}
