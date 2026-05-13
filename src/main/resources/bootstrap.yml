@@ -6,7 +6,7 @@ spring:
     config:
       uri: ${CONFIG_SERVER}
       name: product-service,common
-      profile: topics,kafka
+      profile: topics
       override-none: true
 
   config:
