@@ -24,41 +24,36 @@ import org.pgsg.config.security.UserDetailsImpl;
 import org.pgsg.product.application.dto.command.CreateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
-import org.pgsg.product.application.mapper.ProductApplicationMapper;
-import org.pgsg.product.domain.event.ProductCreatedEvent;
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.model.ProductStatus;
 import org.pgsg.product.domain.repository.ProductRepository;
-import org.pgsg.product.global.config.TopicConfig;
-import org.springframework.context.ApplicationEventPublisher;
+import org.pgsg.product.infrastructure.scheduler.TimeDealSchedulerService;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Product 서비스 코드 테스트")
 class ProductCommandServiceTest {
+
 	@Mock
 	private ProductRepository productRepository;
+	@Mock
+	private TimeDealSchedulerService schedulerService;
 	@InjectMocks
 	private ProductCommandService productCommandService;
-	@Mock
-	private ProductApplicationMapper mapper;
-	@Mock
-	private TopicConfig topicConfig;
-	@Mock
-	private ApplicationEventPublisher applicationEventPublisher;
 
 	@Captor
 	private ArgumentCaptor<Product> captor;
 
-	private final String PRODUCT_NAME="testName";
-	private final Integer PRICE=100;
-	private final LocalDateTime END_TIME= LocalDateTime.now().plusHours(1);
+	private static final String PRODUCT_NAME = "testName";
+	private static final Integer PRICE = 100;
+	private static final LocalDateTime START_TIME = LocalDateTime.now().plusHours(1);
+	private static final LocalDateTime END_TIME = LocalDateTime.now().plusHours(3);
+
 	private MockedStatic<SecurityUtil> securityUtilMockedStatic;
 
 	@BeforeEach
 	void setUp() {
 		securityUtilMockedStatic = mockStatic(SecurityUtil.class);
-
 		securityUtilMockedStatic.when(SecurityUtil::getCurrentUser)
 			.thenReturn(Optional.of(UserDetailsImpl.builder()
 				.uuid(UUID.randomUUID())
@@ -81,120 +76,114 @@ class ProductCommandServiceTest {
 
 	@Test
 	void createProduct_성공() {
-		//given
-		CreateProductCommand command = new CreateProductCommand(PRODUCT_NAME, PRICE, null);
+		// given
+		CreateProductCommand command = new CreateProductCommand(PRODUCT_NAME, PRICE, null, START_TIME, END_TIME);
 		when(productRepository.save(any(Product.class)))
 			.thenAnswer(invocation -> {
 				Product p = invocation.getArgument(0);
 				ReflectionTestUtils.setField(p, "id", UUID.randomUUID());
-				ReflectionTestUtils.setField(p, "name", PRODUCT_NAME);
-				ReflectionTestUtils.setField(p, "price", PRICE);
 				return p;
 			});
 
-		//when
+		// when
 		productCommandService.createProduct(command);
 
-		//then
+		// then
 		verify(productRepository).save(captor.capture());
-		Product saved=captor.getValue();
+		Product saved = captor.getValue();
 		assertThat(saved.getName()).isEqualTo(PRODUCT_NAME);
 		assertThat(saved.getPrice()).isEqualTo(PRICE);
+		assertThat(saved.getTimeDealSchedule()).isNotNull();
+		assertThat(saved.getStatus()).isEqualTo(ProductStatus.PENDING_RESERVATION);
+
+		// 스케줄 등록 호출 검증
+		verify(schedulerService).rescheduleTimeDealStart(any(UUID.class), eq(START_TIME));
 	}
 
 	@Test
-	void createProduct_실패_잘못된_가격(){
-		assertThatThrownBy(()->productCommandService.createProduct(new CreateProductCommand(PRODUCT_NAME, -1, null)))
-			.isInstanceOf(CustomException.class);
+	void createProduct_실패_잘못된_가격() {
+		assertThatThrownBy(() -> productCommandService.createProduct(
+			new CreateProductCommand(PRODUCT_NAME, -1, null, START_TIME, END_TIME))
+		).isInstanceOf(CustomException.class);
 	}
 
 	@Test
 	void deleteProduct() {
-		//given
-		UUID userId=UUID.randomUUID();
-		Product product = Product.create(PRODUCT_NAME, PRICE, null);
-		securityUtilMockedStatic.when(SecurityUtil::getCurrentUserIdOrThrow).thenReturn(userId);
+		// given
+		UUID userId = UUID.randomUUID();
+		Product product = Product.create(PRODUCT_NAME, PRICE, null, START_TIME, END_TIME);
+		ReflectionTestUtils.setField(product, "createdBy", userId);
+		securityUtilMockedStatic.when(SecurityUtil::getCurrentUserIdOrThrow).thenReturn(userId); // 추가
 		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
 
-		//when
+		// when
 		productCommandService.deleteProduct(UUID.randomUUID());
 
-		//then
+		// then
 		assertThat(product.getDeletedBy()).isNotNull();
+		assertThat(product.getStatus()).isEqualTo(ProductStatus.SALE_CANCELED);
+		verify(schedulerService).cancelSchedule(any(UUID.class));
 	}
 
 	@Test
-	void updateProduct() {
-		//given
-		Product product = Product.create(PRODUCT_NAME, PRICE, null);
-		UpdateProductCommand command=new UpdateProductCommand("test",1,null,LocalDateTime.now(),LocalDateTime.now().plusHours(1));
+	void updateInfoProduct() {
+		// given
+		Product product = Product.create(PRODUCT_NAME, PRICE, null, START_TIME, END_TIME);
+		UpdateProductCommand command = new UpdateProductCommand("newName", 200, "newDesc");
 		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
-		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation -> {
+		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		// when
+		productCommandService.updateProduct(UUID.randomUUID(), command);
+
+		// then
+		verify(productRepository).saveAndFlush(captor.capture());
+		Product saved = captor.getValue();
+		assertThat(saved.getName()).isEqualTo("newName");
+		assertThat(saved.getPrice()).isEqualTo(200);
+	}
+
+	@Test
+	void 타임딜_수정_성공() {
+		// given
+		Product product = Product.create(PRODUCT_NAME, PRICE, null, START_TIME, END_TIME);
+		// PENDING_SALE 상태로 설정 (타임딜 수정 가능 상태)
+		ReflectionTestUtils.setField(product, "status", ProductStatus.PENDING_SALE);
+
+		LocalDateTime newStart = LocalDateTime.now().plusHours(2);
+		LocalDateTime newEnd = LocalDateTime.now().plusHours(4);
+		UpdateTimeDealCommand command = new UpdateTimeDealCommand(newStart, newEnd);
+
+		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
+		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation ->{
 			Product p = invocation.getArgument(0);
-			ReflectionTestUtils.setField(p, "id", UUID.randomUUID());
-			ReflectionTestUtils.setField(p, "name", PRODUCT_NAME);
-			ReflectionTestUtils.setField(p, "price", PRICE);
+			ReflectionTestUtils.setField(p, "id", UUID.randomUUID()); // id 설정 추가
 			return p;
 		});
 
-		//when
-		productCommandService.updateProduct(UUID.randomUUID(),command);
+		// when
+		productCommandService.updateTimeDeal(UUID.randomUUID(), command);
 
-		//then
+		// then
 		verify(productRepository).saveAndFlush(captor.capture());
-		Product saved=captor.getValue();
-		assertThat(saved.getName()).isEqualTo(PRODUCT_NAME);
-		assertThat(saved.getPrice()).isEqualTo(PRICE);
-
+		Product saved = captor.getValue();
+		assertThat(saved.getTimeDealSchedule().getStartTime()).isEqualTo(newStart);
+		assertThat(saved.getTimeDealSchedule().getEndTime()).isEqualTo(newEnd);
+		assertThat(saved.getStatus()).isEqualTo(ProductStatus.PENDING_RESERVATION);
+		verify(schedulerService).rescheduleTimeDealStart(any(UUID.class), any(LocalDateTime.class));
 	}
 
 	@Test
-	void 타임딜_설정(){
-		//given
-		Product product = Product.create(PRODUCT_NAME, PRICE, null);
-		UpdateTimeDealCommand command=new UpdateTimeDealCommand(LocalDateTime.now().plusHours(1));
-
-		TopicConfig.Product mockProduct = mock(TopicConfig.Product.class);
-		when(topicConfig.getProduct()).thenReturn(mockProduct);
-		when(mockProduct.getCreated()).thenReturn("prod-product-created");
-
-		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
-		when(productRepository.saveAndFlush(any(Product.class))).thenAnswer(invocation -> {
-			Product p = invocation.getArgument(0);
-			ReflectionTestUtils.setField(p, "id", UUID.randomUUID());
-			ReflectionTestUtils.setField(p, "name", PRODUCT_NAME);
-			ReflectionTestUtils.setField(p, "price", PRICE);
-			return p;
-		});
-		when(mapper.toCreatedEvent(any(Product.class)))
-			.thenReturn(new ProductCreatedEvent(
-				UUID.randomUUID(),
-				"testName",
-				100,
-				LocalDateTime.now().plusHours(1),
-				UUID.randomUUID()
-
-			));
-
-		//when
-		productCommandService.setTimeDeal(UUID.randomUUID(),command);
-
-		//then
-		verify(productRepository).saveAndFlush(captor.capture());
-		Product saved=captor.getValue();
-		assertThat(saved.getTimeDealSchedule()).isNotNull();
-	}
-
-	@Test
-	void 판매취소(){
-		//given
-		Product product = Product.create(PRODUCT_NAME, PRICE, null);
+	void 판매취소() {
+		// given
+		Product product = Product.create(PRODUCT_NAME, PRICE, null, START_TIME, END_TIME);
 		when(productRepository.findById(any(UUID.class))).thenReturn(Optional.of(product));
 
-		//when
+		// when
 		productCommandService.cancelSale(UUID.randomUUID());
 
-		//then
+		// then
 		assertThat(product.getStatus()).isEqualTo(ProductStatus.SALE_CANCELED);
+		verify(schedulerService).cancelSchedule(any(UUID.class));
 	}
 }

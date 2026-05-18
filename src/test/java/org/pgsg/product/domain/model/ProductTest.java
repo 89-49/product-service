@@ -23,18 +23,22 @@ class ProductTest {
 	private static final String VALID_PRODUCT_NAME = "Test Product";
 	private static final String VALID_PRODUCT_DESCRIPTION = "Test Product";
 	private static final Integer VALID_PRODUCT_PRICE = 100;
-	private MockedStatic<SecurityUtil> securityUtilMockedStatic;
+	private static final LocalDateTime VALID_START_TIME = LocalDateTime.now().plusHours(1);
+	private static final LocalDateTime VALID_END_TIME = LocalDateTime.now().plusHours(3);
 
+	private MockedStatic<SecurityUtil> securityUtilMockedStatic;
 	private Product validProduct;
 
 	@BeforeEach
 	void setUp() {
-		validProduct = Product.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION);
-		validProduct.setTimeDealSchedule(LocalDateTime.now().plusHours(3));
+		validProduct = Product.create(
+			VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE, VALID_PRODUCT_DESCRIPTION,
+			VALID_START_TIME, VALID_END_TIME
+		);
+		// create() 후 PENDING_RESERVATION 상태이므로 startReserve() 테스트를 위해 그대로 사용
 		ReflectionTestUtils.setField(validProduct, "status", ProductStatus.PENDING_RESERVATION);
 
 		securityUtilMockedStatic = mockStatic(SecurityUtil.class);
-
 		securityUtilMockedStatic.when(SecurityUtil::getCurrentUser)
 			.thenReturn(Optional.of(UserDetailsImpl.builder()
 				.uuid(UUID.randomUUID())
@@ -57,39 +61,69 @@ class ProductTest {
 
 	@Test
 	void create_성공() {
-		Product p = Product.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION);
+		Product p = Product.create(
+			VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE, VALID_PRODUCT_DESCRIPTION,
+			VALID_START_TIME, VALID_END_TIME
+		);
 
 		assertThat(p.getName()).isEqualTo(VALID_PRODUCT_NAME);
 		assertThat(p.getPrice()).isEqualTo(VALID_PRODUCT_PRICE);
 		assertThat(p.getDescription()).isEqualTo(VALID_PRODUCT_DESCRIPTION);
+		assertThat(p.getTimeDealSchedule()).isNotNull();
+		assertThat(p.getStatus()).isEqualTo(ProductStatus.PENDING_RESERVATION);
 	}
 
 	@Test
 	void create_잘못된_가격() {
-		assertThatThrownBy(()->Product
-			.create(VALID_PRODUCT_NAME, -1,VALID_PRODUCT_DESCRIPTION))
-			.isInstanceOf(CustomException.class);
+		assertThatThrownBy(() -> Product.create(
+			VALID_PRODUCT_NAME, -1, VALID_PRODUCT_DESCRIPTION,
+			VALID_START_TIME, VALID_END_TIME)
+		).isInstanceOf(CustomException.class);
 	}
 
 	@Test
-	void create_잘못된_종료시간_설정(){
-		Product p=Product
-			.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION);
-		assertThatThrownBy(()->p.setTimeDealSchedule(LocalDateTime.now()))
-			.isInstanceOf(CustomException.class);
+	void create_잘못된_시작시간_설정() {
+		assertThatThrownBy(() -> Product.create(
+			VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE, VALID_PRODUCT_DESCRIPTION,
+			LocalDateTime.now().minusHours(1), VALID_END_TIME)
+		).isInstanceOf(CustomException.class);
 	}
 
-	// @Test	//todo: 해당 부분은 스케줄링 고도화 시 다시 작성
-	// void create_잘못된_시작시간_설정(){
-	// 		assertThatThrownBy(()->Product
-	// 		.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION,
-	// 			TimeDealSchedule.of(LocalDateTime.now().minusHours(1),LocalDateTime.now().plusHours(1))))
-	// 		.isInstanceOf(CustomException.class);
-	// }
+	@Test
+	void create_잘못된_종료시간_설정() {
+		assertThatThrownBy(() -> Product.create(
+			VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE, VALID_PRODUCT_DESCRIPTION,
+			VALID_START_TIME, VALID_START_TIME.plusMinutes(10))  // 15분 미만
+		).isInstanceOf(CustomException.class);
+	}
 
 	@Test
-	void 타임딜_스케줄링_성공(){
+	void 타임딜_스케줄링_성공() {
 		assertThat(validProduct.getTimeDealSchedule()).isNotNull();
+	}
+
+	@Test
+	void updateTimeDeal_성공() {
+		// PENDING_SALE 상태에서 타임딜 수정
+		ReflectionTestUtils.setField(validProduct, "status", ProductStatus.PENDING_SALE);
+
+		LocalDateTime newStart = LocalDateTime.now().plusHours(2);
+		LocalDateTime newEnd = LocalDateTime.now().plusHours(4);
+		validProduct.updateTimeDeal(newStart, newEnd);
+
+		assertThat(validProduct.getTimeDealSchedule().getStartTime()).isEqualTo(newStart);
+		assertThat(validProduct.getTimeDealSchedule().getEndTime()).isEqualTo(newEnd);
+		assertThat(validProduct.getStatus()).isEqualTo(ProductStatus.PENDING_RESERVATION);
+	}
+
+	@Test
+	void updateTimeDeal_잘못된_상태() {
+		// PENDING_RESERVATION 이외 상태에서 수정 불가
+		ReflectionTestUtils.setField(validProduct, "status", ProductStatus.RESERVING);
+
+		assertThatThrownBy(() -> validProduct.updateTimeDeal(
+			LocalDateTime.now().plusHours(2), LocalDateTime.now().plusHours(4))
+		).isInstanceOf(CustomException.class);
 	}
 
 	@Test
@@ -102,10 +136,9 @@ class ProductTest {
 
 	@Test
 	void 상태_변경_실패() {
-		assertThatThrownBy(()->validProduct.complete())
+		assertThatThrownBy(() -> validProduct.complete())
 			.isInstanceOf(CustomException.class);
 	}
-
 
 	@Test
 	void cancelSale() {
@@ -114,27 +147,16 @@ class ProductTest {
 	}
 
 	@Test
-	void update() {
-		validProduct.update("new",null,null,null);
+	void updateInfo_성공() {
+		validProduct.updateInfo("new", null, null);
 		assertThat(validProduct.getName()).isEqualTo("new");
 		assertThat(validProduct.getPrice()).isEqualTo(VALID_PRODUCT_PRICE);
 		assertThat(validProduct.getDescription()).isEqualTo(VALID_PRODUCT_DESCRIPTION);
 	}
 
 	@Test
-	void changeTimeDealSchedule() {
-		TimeDealSchedule newSchedule=TimeDealSchedule.of(LocalDateTime.now().plusHours(2),LocalDateTime.now().plusHours(3));
-		validProduct.update(null,null,null,newSchedule);
-		assertThat(validProduct.getName()).isEqualTo(VALID_PRODUCT_NAME);
-		assertThat(validProduct.getPrice()).isEqualTo(VALID_PRODUCT_PRICE);
-		assertThat(validProduct.getDescription()).isEqualTo(VALID_PRODUCT_DESCRIPTION);
-		assertThat(validProduct.getTimeDealSchedule().getStartTime()).isEqualTo(newSchedule.getStartTime());
-		assertThat(validProduct.getTimeDealSchedule().getEndTime()).isEqualTo(newSchedule.getEndTime());
-	}
-
-	@Test
 	void deleteProduct() {
-		UUID id=UUID.randomUUID();
+		UUID id = UUID.randomUUID();
 		validProduct.deleteProduct(id);
 		assertThat(validProduct.getDeletedBy()).isEqualTo(id);
 		assertNotNull(validProduct.getDeletedAt());

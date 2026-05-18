@@ -66,7 +66,7 @@ public class ProductOuterController {
 	@PatchMapping("/{productId}/schedule")
 	public CommonResponse<UpdateProductResponse> setTimeDealSchedule(@PathVariable UUID productId,@Valid @RequestBody UpdateTimeDealRequest request) {
 		UpdateTimeDealCommand command=mapper.toCommand(request);
-		UpdateProductResult result =productCommandService.setTimeDeal(productId, command);
+		UpdateProductResult result =productCommandService.updateTimeDeal(productId, command);
 		UpdateProductResponse response=mapper.toResponse(result);
 		return CommonResponse.success(response);
 	}

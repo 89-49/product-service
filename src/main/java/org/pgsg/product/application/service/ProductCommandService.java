@@ -2,8 +2,6 @@ package org.pgsg.product.application.service;
 
 import static org.pgsg.product.global.exception.ProductErrorCode.*;
 
-import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.UUID;
 
 import org.pgsg.common.event.OutboxEvent;
@@ -15,13 +13,12 @@ import org.pgsg.product.application.dto.command.UpdateProductCommand;
 import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
 import org.pgsg.product.application.dto.result.CreateProductResult;
 import org.pgsg.product.application.dto.result.UpdateProductResult;
-import org.pgsg.product.application.mapper.ProductApplicationMapper;
 import org.pgsg.product.domain.event.ProductCreatedEvent;
+import org.pgsg.product.domain.event.TimeDealScheduleEvent;
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.domain.repository.ProductRepository;
-import org.pgsg.product.global.config.TopicConfig;
-import org.pgsg.product.global.exception.ProductErrorCode;
+import org.pgsg.product.infrastructure.scheduler.TimeDealSchedulerService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,39 +35,34 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ProductCommandService {
 	private final ProductRepository productRepository;
-	private final ProductApplicationMapper mapper;
-	private final TopicConfig topicConfig;
+	private final TimeDealSchedulerService schedulerService;
 	private final ApplicationEventPublisher eventPublisher;
 
+	/*
+	* 상품 등록
+	* */
 	public CreateProductResult createProduct(CreateProductCommand command) {
 		Product product =Product.create(
-			command.name(),command.price(),command.description());	//todo: 스케줄 입력 시기 변경 후 수정 필요
+			command.name(),command.price(),command.description(),command.startTime(),command.endTime());
 
 		Product saved=productRepository.save(product);
 		log.info("Created product: productId:{}, userId:{}", saved.getId(),saved.getCreatedBy());
-		//todo: 스케줄링 도구 적용 시 생성 후 스케줄이 등록되도록 고도화 예정
+
+		eventPublisher.publishEvent(
+			new TimeDealScheduleEvent(saved.getId(), saved.getTimeDealSchedule().getStartTime())
+		);
+
 		return new CreateProductResult(saved.getId(),saved.getName(),saved.getPrice(),saved.getDescription());
 	}
 
-	public void deleteProduct(UUID id) {
-		Product product=findById(id);
-		checkAuthorization(product.getCreatedBy());
-
-		UUID userId = SecurityUtil.getCurrentUserIdOrThrow();
-		product.deleteProduct(userId);
-		log.info("Deleted product. productId:{}, userId:{}", id, userId);
-	}
-
+	/*
+	* 상품 정보 수정
+	* */
 	public UpdateProductResult updateProduct(UUID id, UpdateProductCommand command) {
 		Product product = findById(id);
 		checkAuthorization(product.getCreatedBy());
 
-		//todo: timeDealSchedule 설정부분 리팩토링 후 수정 예정
-		TimeDealSchedule newSchedule = command.endTime() == null ? null
-			: TimeDealSchedule.of(command.startTime() == null ? LocalDateTime.now() : command.startTime(),
-			command.endTime());
-
-		product.update(command.name(), command.price(), command.description(), newSchedule);
+		product.updateInfo(command.name(), command.price(), command.description());
 
 		Product saved = productRepository.saveAndFlush(product);
 		log.info("Updated product: productId:{}, userId:{}", saved.getId(), saved.getModifiedBy());
@@ -84,57 +76,81 @@ public class ProductCommandService {
 			schedule == null ? null : schedule.getEndTime()
 		);
 	}
-	public UpdateProductResult setTimeDeal(UUID id, UpdateTimeDealCommand command) {
+
+	/*
+	* 타임딜 수정
+	* */
+	public UpdateProductResult updateTimeDeal(UUID id, UpdateTimeDealCommand command) {
 		Product product = findById(id);
 		checkAuthorization(product.getCreatedBy());
 
-		product.setTimeDealSchedule(command.endTime());
+		product.updateTimeDeal(command.startTime(),command.endTime());
 
-		Product saved=productRepository.saveAndFlush(product);
-		log.info("Set Timedeal: productId:{}, userId:{}", saved.getId(), saved.getModifiedBy());
+		Product saved = productRepository.saveAndFlush(product);
+		log.info("타임딜 수정: productId={}, userId={}", saved.getId(), saved.getModifiedBy());
 
-		//todo: mvp 이후 이벤트 발행 위치 변경 예정
-		ProductCreatedEvent payload = mapper.toCreatedEvent(product);
-		String eventType=topicConfig.getProduct().getCreated();
-		OutboxEvent event=new OutboxEvent(saved.getId(),  saved.getId(),"Product", eventType, payload);
-
-		eventPublisher.publishEvent(event);
-		log.info("event is published. productId:{}, eventType:{}", saved.getId(), eventType);
-
+		eventPublisher.publishEvent(
+			new TimeDealScheduleEvent(saved.getId(), saved.getTimeDealSchedule().getStartTime())
+		);
 
 		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
 			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());
 	}
 
+
+	/*
+	* 판매 취소 / 삭제
+	* */
 	public void cancelSale(UUID id) {
 		Product product = findById(id);
+		checkAuthorization(product.getCreatedBy());
 		product.cancelSale();
-		log.info("Sale is cancelled. productId:{}", product.getId());
-
-		// UUID userId = /*Objects.requireNonNull(UserContext.getUserId(), "인증 사용자 정보가 없습니다.");*/
-		// 	UUID.fromString("00000000-0000-0000-0000-000000000000");	//todo: 로컬 테스트용, 인증 서비스 연결 후 수정
-		// product.deleteProduct(id);	//todo: 삭제와 판매 취소를 동일하게 할지 좀 더 고려
+		schedulerService.cancelSchedule(id);
+		log.info("판매 취소: productId={}", id);
 	}
+
+	public void deleteProduct(UUID id) {
+		Product product=findById(id);
+		checkAuthorization(product.getCreatedBy());
+
+		UUID userId = SecurityUtil.getCurrentUserIdOrThrow();
+		product.deleteProduct(userId);
+		schedulerService.cancelSchedule(id);
+		log.info("상품 삭제. productId:{}, userId:{}", id, userId);
+	}
+
+	/*
+	* 외부 이벤트 수신 핸들러
+	* */
 
 	public void completeTrade(UUID id) {
 		Product product = findById(id);
 		product.complete();
-		log.info("Trade is completed. productId:{}", product.getId());
+		log.info("거래 완료. productId:{}", product.getId());
 	}
 
 	public void completeReservation(UUID id) {
 		Product product = findById(id);
 		product.startTrade();
-		log.info("Reservation is completed. productId:{}", product.getId());
+		log.info("거래 시작. productId:{}", product.getId());
 	}
 
 	public void pendingSale(UUID id) {
 		Product product = findById(id);
 		product.revertToReserving();
-		log.info("This product revert to reserving. productId:{}", product.getId());
+		log.info("판매 대기 전환. productId:{}", product.getId());
+	}
+
+	public void revertToReserving(UUID id) {
+		Product product = findById(id);
+		product.revertToReserving();
+		log.info("예약 진행 복귀: productId={}", id);
 	}
 
 
+	/*
+	* 내부 헬퍼
+	* */
 	private Product findById(UUID productId) {
 		return productRepository.findById(productId)
 			.orElseThrow(()->new CustomException(ProductNotFoundException));
