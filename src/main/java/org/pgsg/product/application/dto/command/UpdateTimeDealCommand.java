@@ -20,6 +20,6 @@ public record UpdateTimeDealCommand(
 			throw new CustomException(InvalidChangeScheduleException, "startTime");
 
 		if (endTime.isBefore(startTime.plusMinutes(15)))
-			throw new CustomException(InvalidTimeDealDurationException, "end");
+			throw new CustomException(InvalidTimeDealDurationException, "endTime");
 	}
 }
