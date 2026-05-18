@@ -26,6 +26,8 @@ public class TimeDealSchedulerService {
 
 	private static final String GROUP = "timedeal";
 
+	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
 	private final Scheduler scheduler;
 
 	/**
@@ -115,6 +117,6 @@ public class TimeDealSchedulerService {
 	}
 
 	private static Date toDate(LocalDateTime ldt) {
-		return Date.from(ldt.toInstant(ZoneOffset.UTC));
+		return Date.from(ldt.atZone(KST).toInstant());
 	}
 }
