@@ -124,7 +124,7 @@ class ProductCommandServiceTest {
 	}
 
 	@Test
-	void updateProduct() {
+	void updateInfoProduct() {
 		//given
 		Product product = Product.create(PRODUCT_NAME, PRICE, null);
 		UpdateProductCommand command=new UpdateProductCommand("test",1,null,LocalDateTime.now(),LocalDateTime.now().plusHours(1));
@@ -177,7 +177,7 @@ class ProductCommandServiceTest {
 			));
 
 		//when
-		productCommandService.setTimeDeal(UUID.randomUUID(),command);
+		productCommandService.updateTimeDeal(UUID.randomUUID(),command);
 
 		//then
 		verify(productRepository).saveAndFlush(captor.capture());

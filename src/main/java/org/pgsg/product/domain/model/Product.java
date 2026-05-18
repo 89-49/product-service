@@ -48,8 +48,10 @@ public class Product extends BaseEntity {
 	private TimeDealSchedule timeDealSchedule;
 
 
-	//상품 생성
-	public static Product create(String name, Integer price, String description/*, TimeDealSchedule timeDealSchedule*/) {
+	/*
+	상품 생성
+	*/
+	public static Product create(String name, Integer price, String description, LocalDateTime startTime, LocalDateTime endTime) {
 		validatePrice(price);
 
 		Objects.requireNonNull(name,"상품명이 누락되었습니다.");
@@ -59,30 +61,31 @@ public class Product extends BaseEntity {
 		product.name = name;
 		product.price = price;
 		product.description = description;
-		//todo: mvp에선 타임딜 설정을 분리하여 구현하고, 추후 고도화 시 스케줄링 솔루션 적용 시엔 두 방식 다 사용 가능하도록 수정 예정
-		//product.timeDealSchedule = TimeDealSchedule.of(timeDealSchedule.getStartTime(), timeDealSchedule.getEndTime());
-		product.status=ProductStatus.PENDING_SALE;	//todo: mvp를 위해 판매 대기 중으로 설정, 추후 생성 시 분기 등에 의해 결정되도록 수정 예정
+		product.validateTimeDealSchedule(startTime,endTime);
+		product.timeDealSchedule = TimeDealSchedule.of(startTime, endTime);
+		product.status=ProductStatus.PENDING_SALE;
+		product.reserve();
 
 		return product;
 	}
 
-	private static void validatePrice(Integer price) {
-		Objects.requireNonNull(price);
-		if (price < 0)
-			throw new CustomException(PriceValidateException,"price");
+	/*
+	타임딜 스케줄링
+	*/
+	public void updateTimeDeal(LocalDateTime newStart, LocalDateTime newEnd) {
+		if(!isUpdatableStatus())
+			throw new CustomException(InvalidStatusException,"status");
+
+		validateTimeDealSchedule(newStart, newEnd);
+
+		this.timeDealSchedule = TimeDealSchedule.of(newStart, newEnd);
+		if (status == ProductStatus.PENDING_SALE)
+			reserve();
 	}
 
-	//요청 시간 기준으로 타임딜 시간 설정	//todo: 타임딜 스케줄러 도입 후 startReserve 분리 예정
-	public void setTimeDealSchedule(LocalDateTime end) {
-		LocalDateTime now = LocalDateTime.now();
-		validateTimeDealSchedule(now,end);
-
-		this.timeDealSchedule=TimeDealSchedule.of(now,end);
-		this.status=ProductStatus.PENDING_RESERVATION;
-		startReserve();
-	}
-
-	//상태 변경	//todo: 다른 도메인과의 협업 시 status 변경 로직 분리 고려
+	/*
+	상태 전이
+	*/
 	//예약 대기 중 -> 예약 진행 중
 	public void startReserve() {
 		if(!status.equals(ProductStatus.PENDING_RESERVATION))
@@ -123,8 +126,10 @@ public class Product extends BaseEntity {
 		status = ProductStatus.SALE_CANCELED;
 	}
 
-	//상품 정보 변경
-	public void update(String newName, Integer newPrice, String newDescription, TimeDealSchedule newTimeDealSchedule) {
+	/*
+	* 상품 정보 수정
+	* */
+	public void updateInfo(String newName, Integer newPrice, String newDescription) {
 		if(!isUpdatableStatus())
 			throw new CustomException(InvalidStatusException,"status");
 
@@ -138,31 +143,24 @@ public class Product extends BaseEntity {
 
 		if(!(newDescription == null || newDescription.isBlank()))
 			description = newDescription;
-
-		if(newTimeDealSchedule != null)
-			changeTimeDealSchedule(newTimeDealSchedule.getStartTime(), newTimeDealSchedule.getEndTime());
 	}
 
-	//타임딜 스케줄 변경
-	public void changeTimeDealSchedule(LocalDateTime newStart, LocalDateTime newEnd) {
-		if(!isUpdatableStatus())
-			throw new CustomException(InvalidStatusException,"status");
 
-		validateTimeDealSchedule(newStart, newEnd);
 
-		this.timeDealSchedule = TimeDealSchedule.of(newStart, newEnd);
+	/*
+	상품 삭제 - soft delete + 거래 취소로 상태 변경
+	* */
+	public void deleteProduct(UUID userId) {
+		delete(userId);
+		cancelSale();
 	}
 
-	private void validateTimeDealSchedule(LocalDateTime start, LocalDateTime end) {	//todo: 정책적 검증의 경우 추가되는 양에 따라 분리 고려
-		Objects.requireNonNull(start,"시작 시간이 누락되었습니다.");
-		Objects.requireNonNull(end,"종료 시간이 누락되었습니다.");
 
-		// if (LocalDateTime.now().isAfter(start)) {	//todo: mvp 이후 고도화 시 해당 부분 적용 고려
-		// 	throw new CustomException("InvalidChangeScheduleException", "startTime");
-		// }
-
-		if(end.isBefore(start.plusMinutes(15)))
-			throw new CustomException(InvalidTimeDealDurationException,"end");
+	//내부 검증
+	private static void validatePrice(Integer price) {
+		Objects.requireNonNull(price);
+		if (price < 0)
+			throw new CustomException(PriceValidateException,"price");
 	}
 
 	private boolean isUpdatableStatus() {
@@ -170,9 +168,15 @@ public class Product extends BaseEntity {
 			status == ProductStatus.PENDING_SALE;
 	}
 
-	//상품 삭제 - soft delete + 거래 취소로 상태 변경
-	public void deleteProduct(UUID userId) {
-		delete(userId);
-		cancelSale();
+	private void validateTimeDealSchedule(LocalDateTime start, LocalDateTime end) {	//todo: 정책적 검증의 경우 추가되는 양에 따라 분리 고려
+		Objects.requireNonNull(start,"시작 시간이 누락되었습니다.");
+		Objects.requireNonNull(end,"종료 시간이 누락되었습니다.");
+
+		if (LocalDateTime.now().isAfter(start)) {
+			throw new CustomException(InvalidChangeScheduleException, "startTime");
+		}
+
+		if(end.isBefore(start.plusMinutes(15)))
+			throw new CustomException(InvalidTimeDealDurationException,"end");
 	}
 }

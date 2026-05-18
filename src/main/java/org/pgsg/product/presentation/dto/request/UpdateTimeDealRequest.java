@@ -3,9 +3,10 @@ package org.pgsg.product.presentation.dto.request;
 import java.time.LocalDateTime;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 
 public record UpdateTimeDealRequest(
-	// LocalDateTime startTime,	//todo: mvp에서는 종료 시간만 설정
+	@NonNull LocalDateTime startTime,
 	@NotNull LocalDateTime endTime
 ) {
 }

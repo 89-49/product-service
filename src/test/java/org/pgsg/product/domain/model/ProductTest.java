@@ -30,7 +30,7 @@ class ProductTest {
 	@BeforeEach
 	void setUp() {
 		validProduct = Product.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION);
-		validProduct.setTimeDealSchedule(LocalDateTime.now().plusHours(3));
+		validProduct.UpdateTimeDealSchedule(LocalDateTime.now().plusHours(3));
 		ReflectionTestUtils.setField(validProduct, "status", ProductStatus.PENDING_RESERVATION);
 
 		securityUtilMockedStatic = mockStatic(SecurityUtil.class);
@@ -75,7 +75,7 @@ class ProductTest {
 	void create_잘못된_종료시간_설정(){
 		Product p=Product
 			.create(VALID_PRODUCT_NAME, VALID_PRODUCT_PRICE,VALID_PRODUCT_DESCRIPTION);
-		assertThatThrownBy(()->p.setTimeDealSchedule(LocalDateTime.now()))
+		assertThatThrownBy(()->p.UpdateTimeDealSchedule(LocalDateTime.now()))
 			.isInstanceOf(CustomException.class);
 	}
 
@@ -114,8 +114,8 @@ class ProductTest {
 	}
 
 	@Test
-	void update() {
-		validProduct.update("new",null,null,null);
+	void updateInfo() {
+		validProduct.updateInfo("new",null,null,null);
 		assertThat(validProduct.getName()).isEqualTo("new");
 		assertThat(validProduct.getPrice()).isEqualTo(VALID_PRODUCT_PRICE);
 		assertThat(validProduct.getDescription()).isEqualTo(VALID_PRODUCT_DESCRIPTION);
@@ -124,7 +124,7 @@ class ProductTest {
 	@Test
 	void changeTimeDealSchedule() {
 		TimeDealSchedule newSchedule=TimeDealSchedule.of(LocalDateTime.now().plusHours(2),LocalDateTime.now().plusHours(3));
-		validProduct.update(null,null,null,newSchedule);
+		validProduct.updateInfo(null,null,null,newSchedule);
 		assertThat(validProduct.getName()).isEqualTo(VALID_PRODUCT_NAME);
 		assertThat(validProduct.getPrice()).isEqualTo(VALID_PRODUCT_PRICE);
 		assertThat(validProduct.getDescription()).isEqualTo(VALID_PRODUCT_DESCRIPTION);
