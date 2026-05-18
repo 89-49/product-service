@@ -108,6 +108,7 @@ public class ProductCommandService {
 
 		UUID userId = SecurityUtil.getCurrentUserIdOrThrow();
 		product.deleteProduct(userId);
+		schedulerService.cancelSchedule(id);
 		log.info("상품 삭제. productId:{}, userId:{}", id, userId);
 	}
 
