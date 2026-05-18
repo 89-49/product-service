@@ -2,6 +2,7 @@ package org.pgsg.product.infrastructure.scheduler;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.UUID;
 
@@ -64,6 +65,7 @@ public class TimeDealSchedulerService {
 			if (scheduler.checkExists(key)) {
 				Trigger newTrigger = TriggerBuilder.newTrigger()
 					.withIdentity(key)
+					.forJob(jobKey(productId))
 					.startAt(toDate(newStartTime))
 					.build();
 
@@ -71,7 +73,18 @@ public class TimeDealSchedulerService {
 				log.info("타임딜 스케줄 수정: productId={}, newStartTime={}", productId, newStartTime);
 			} else {
 				// 스케줄이 없는 경우(예: 이전 실행 완료 후 재설정) 신규 등록
-				scheduleTimeDealStart(productId, newStartTime);
+				Trigger newTrigger = TriggerBuilder.newTrigger()
+					.withIdentity(triggerKey(productId))
+					.forJob(jobKey(productId))
+					.startAt(toDate(newStartTime))
+					.build();
+
+				if (scheduler.checkExists(jobKey(productId))) {
+					scheduler.scheduleJob(newTrigger);  // Job은 유지, Trigger만 신규 등록
+				} else {
+					scheduleTimeDealStart(productId, newStartTime);  // Job + Trigger 모두 신규 등록
+				}
+				log.info("타임딜 스케줄 신규 등록: productId={}, newStartTime={}", productId, newStartTime);
 			}
 
 		} catch (SchedulerException e) {
@@ -89,6 +102,7 @@ public class TimeDealSchedulerService {
 			log.info("타임딜 스케줄 제거: productId={}", productId);
 		} catch (SchedulerException e) {
 			log.warn("타임딜 스케줄 제거 실패 (이미 실행됐을 수 있음): productId={}", productId, e);
+			throw new RuntimeException("타임딜 스케줄 제거 중 오류가 발생했습니다.", e);
 		}
 	}
 
@@ -101,6 +115,6 @@ public class TimeDealSchedulerService {
 	}
 
 	private static Date toDate(LocalDateTime ldt) {
-		return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+		return Date.from(ldt.toInstant(ZoneOffset.UTC));
 	}
 }

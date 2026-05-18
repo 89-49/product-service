@@ -2,20 +2,11 @@ package org.pgsg.product.infrastructure.scheduler;
 
 import java.util.UUID;
 
-import org.pgsg.common.event.OutboxEvent;
-import org.pgsg.common.exception.CustomException;
-import org.pgsg.product.application.mapper.ProductApplicationMapper;
-import org.pgsg.product.domain.event.ProductCreatedEvent;
-import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.repository.ProductRepository;
-import org.pgsg.product.global.config.TopicConfig;
-import org.pgsg.product.global.exception.ProductErrorCode;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,34 +26,13 @@ public class TimeDealStartJob implements Job {
 	private ProductRepository productRepository;
 
 	@Autowired
-	private ApplicationEventPublisher eventPublisher;
-
-	@Autowired
-	private TopicConfig topicConfig;
-
-	@Autowired
-	private ProductApplicationMapper mapper;
+	private TimeDealStartService timeDealStartService;
 
 	@Override
-	@Transactional
 	public void execute(JobExecutionContext context) {
 		UUID productId = UUID.fromString(
 			context.getMergedJobDataMap().getString("productId")
 		);
-
-		Product product = productRepository.findById(productId)
-			.orElseThrow(() -> new CustomException(ProductErrorCode.ProductNotFoundException));
-
-		// 상태 전이: PENDING_RESERVATION → RESERVING
-		product.startReserve();
-		productRepository.save(product);
-
-		// Outbox 경유 이벤트 발행 — 예약 서비스가 구독하여 선착순 접수 시작
-		ProductCreatedEvent payload = mapper.toCreatedEvent(product);
-		String eventType = topicConfig.getProduct().getCreated();
-		OutboxEvent event = new OutboxEvent(productId, productId, "Product", eventType, payload);
-		eventPublisher.publishEvent(event);
-
-		log.info("타임딜 시작: productId={}, eventType={}", productId, eventType);
+		timeDealStartService.startTimeDeal(productId);
 	}
 }

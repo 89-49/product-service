@@ -14,10 +14,12 @@ import org.pgsg.product.application.dto.command.UpdateTimeDealCommand;
 import org.pgsg.product.application.dto.result.CreateProductResult;
 import org.pgsg.product.application.dto.result.UpdateProductResult;
 import org.pgsg.product.domain.event.ProductCreatedEvent;
+import org.pgsg.product.domain.event.TimeDealScheduleEvent;
 import org.pgsg.product.domain.model.Product;
 import org.pgsg.product.domain.model.TimeDealSchedule;
 import org.pgsg.product.domain.repository.ProductRepository;
 import org.pgsg.product.infrastructure.scheduler.TimeDealSchedulerService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ProductCommandService {
 	private final ProductRepository productRepository;
 	private final TimeDealSchedulerService schedulerService;
+	private final ApplicationEventPublisher eventPublisher;
 
 	/*
 	* 상품 등록
@@ -45,7 +48,9 @@ public class ProductCommandService {
 		Product saved=productRepository.save(product);
 		log.info("Created product: productId:{}, userId:{}", saved.getId(),saved.getCreatedBy());
 
-		schedulerService.rescheduleTimeDealStart(saved.getId(), saved.getTimeDealSchedule().getStartTime());
+		eventPublisher.publishEvent(
+			new TimeDealScheduleEvent(saved.getId(), saved.getTimeDealSchedule().getStartTime())
+		);
 
 		return new CreateProductResult(saved.getId(),saved.getName(),saved.getPrice(),saved.getDescription());
 	}
@@ -84,7 +89,9 @@ public class ProductCommandService {
 		Product saved = productRepository.saveAndFlush(product);
 		log.info("타임딜 수정: productId={}, userId={}", saved.getId(), saved.getModifiedBy());
 
-		schedulerService.rescheduleTimeDealStart(saved.getId(), saved.getTimeDealSchedule().getStartTime());
+		eventPublisher.publishEvent(
+			new TimeDealScheduleEvent(saved.getId(), saved.getTimeDealSchedule().getStartTime())
+		);
 
 		return new UpdateProductResult(saved.getName(), saved.getPrice(), saved.getDescription(),
 			saved.getTimeDealSchedule().getStartTime(), saved.getTimeDealSchedule().getEndTime());
